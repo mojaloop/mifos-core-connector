@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.4](https://github.com/mojaloop/mifos-core-connector/compare/v0.0.3...v0.0.4) (2024-03-22)
+
+
+### Features
+
+* implemented tests for transfers ([0283c7c](https://github.com/mojaloop/mifos-core-connector/commit/0283c7c09e0bcc908a396d5c4f16826f782932bd))
+* implemented transfers function ([5ffbfb7](https://github.com/mojaloop/mifos-core-connector/commit/5ffbfb72eba28e1e1856fcd1653c063324838d5a))
+* implemented transfers function routes ([6a36bd9](https://github.com/mojaloop/mifos-core-connector/commit/6a36bd942e2d8553d04a406b80e899c456aab476))
+
 ### [0.0.3](https://github.com/mojaloop/mifos-core-connector/compare/v0.0.2...v0.0.3) (2024-03-22)
 
 
