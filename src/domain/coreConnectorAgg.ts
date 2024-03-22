@@ -27,12 +27,28 @@
 
  "use strict";
 
-import { FineractLookupStage, IFineractClient, IdType, PartyType, TFineractConfig } from "./FineractClient/types";
-import { ILogger, TLookupPartyInfoResponse, TQuoteResponse, TQuoteRequest } from "./interfaces";
+import { randomUUID } from "crypto";
+import { 
+    FineractLookupStage, 
+    IFineractClient, 
+    IdType, 
+    PartyType, 
+    TFineractConfig,
+    TFineractTransactionPayload
+ } from "./FineractClient/types";
+import { 
+    ILogger, 
+    TLookupPartyInfoResponse, 
+    TQuoteResponse, 
+    TQuoteRequest, 
+    TtransferResponse, 
+    TtransferRequest 
+} from "./interfaces";
 
 export class CoreConnectorAggregate{
     public IdType : string;
     private logger: ILogger;
+    DATE_FORMAT = "dd MM yy";
 
     constructor(
         private readonly fineractConfig: TFineractConfig,
@@ -127,10 +143,47 @@ export class CoreConnectorAggregate{
         }
     }
 
+    async transfer(transfer: TtransferRequest ): Promise<TtransferResponse | undefined>{
+        if(transfer.to.idType != this.IdType){
+            throw new Error("Unsupported ID Type");
+        }
+        this.logger.info(`Transfer for  ${this.IdType} ${transfer.to.idValue}`);
+        const accountNo = this.extractAccountFromIBAN(transfer.to.idValue);
+
+        const res = await this.fineractClient.getAccountFineractIdWithAccountNo(accountNo);
+        if(!res || res.accountId == null){
+            return;
+        }
+        // const date = new Date();
+        const transaction : TFineractTransactionPayload = {
+            locale: this.fineractConfig.FINERACT_LOCALE,
+            dateFormat: this.DATE_FORMAT,
+            transactionDate: `11 3 24`, //`${date.getDate()} ${date.getMonth()} ${date.getFullYear()}`,
+            transactionAmount: transfer.amount,
+            paymentTypeId: "1",
+            accountNumber: accountNo,
+            routingCode: randomUUID(),
+            receiptNumber: randomUUID(),
+            bankNumber: this.fineractConfig.FINERACT_BANK_ID
+        };
+        const transferRes = await this.fineractClient.transfer({
+            accountId: res.accountId as number,
+            transaction: transaction
+        });
+        if(!transferRes){
+            return;
+        }
+        const transferResponse : TtransferResponse = {
+            completedTimestamp : new Date().toJSON(),
+            fulfilment: undefined,
+            homeTransactionId: transfer.transferId,
+            transferState: "COMMITTED"  
+        };
+        return transferResponse;
+    }
+
     extractAccountFromIBAN(IBAN:string): string{
-        // if(!this.validateIBAN(IBAN)){
-        //     throw new Error("IBAN is invalid");
-        // } todo think how to validate account numbers 
+        // todo think how to validate account numbers 
         const accountNo = IBAN.slice(
             this.fineractConfig.FINERACT_BANK_COUNTRY_CODE.length+
             this.fineractConfig.FINERACT_CHECK_DIGITS.length+
@@ -139,32 +192,4 @@ export class CoreConnectorAggregate{
         );
         return accountNo;
     }
-
-    validateIBAN(iban: string): boolean { 
-       // Remove spaces and convert to uppercase
-        iban = iban.replace(/\s+/g, '').toUpperCase();
-        
-        // Check if IBAN is of the correct length for the specified country
-        if (iban.length < 2 || iban.length > 34) {
-            return false;
-        }
-        
-        // Check if IBAN contains only alphanumeric characters
-        if (!/^[A-Z0-9]+$/.test(iban)) {
-            return false;
-        }
-        
-        // Move the first 4 characters to the end
-        iban = iban.substring(4) + iban.substring(0, 4);
-        
-        // Replace letters with digits (A=10, B=11, ..., Z=35)
-        iban = iban.replace(/[A-Z]/g, (char) => (char.charCodeAt(0) - 55).toString());
-        
-        // Parse the IBAN as a number
-        const ibanNumber = BigInt(iban);
-        
-        // Check if IBAN is valid (i.e., IBAN number modulo 97 equals 1)
-        return ibanNumber % BigInt(97) === BigInt(1);
-    }
-
  }
