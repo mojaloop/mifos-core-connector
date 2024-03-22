@@ -28,12 +28,17 @@
  "use strict";
 
 import axios from "axios";
+import { randomUUID } from "crypto";
 import { CONFIG, Service } from "../../src/core-connector-svc";
 import { loggerFactory } from "../../src/infra/logger";
+import { TQuoteRequest } from "../../src/domain/interfaces";
 
 
 jest.setTimeout(1000000);
 const logger = loggerFactory({context: "Core Connector Tests"});
+const IBAN = "SK680720000289000000002";
+const IdType = "IBAN";
+const baseurl = `http://${CONFIG.server.HOST?.toString()}:${CONFIG.server.PORT?.toString()}`;
 
 function extractAccountFromIBAN(IBAN:string): string{
     const accountNo = IBAN.slice(
@@ -55,12 +60,90 @@ function extractAccountFromIBAN(IBAN:string): string{
     });
 
     test("GET /parties/IBAN/{ID} Should return party info if it exists in fineract",async ()=>{
-        const IBAN = "SK680720000289000000002";
-        const url = `http://${CONFIG.server.HOST?.toString()}:${CONFIG.server.PORT?.toString()}/parties/IBAN/${IBAN}`;
+        const url = `${baseurl}/parties/IBAN/${IBAN}`;
         const res = await axios.get(url);   
         logger.info(res.data);
 
         expect(res.data["idValue"]).toEqual(extractAccountFromIBAN(IBAN));
+    });
+
+    test("POST /quoterequests Should return quote if party info exists", async ()=>{
+        const quoteRequest : TQuoteRequest= {
+            "homeR2PTransactionId": "string",
+            "amount": "5.6",
+            "amountType": "SEND",
+            "currency": "AED",
+            "expiration": "6000-02-29T20:02:59.152Z",
+            "extensionList": [
+              {
+                "key": "string",
+                "value": "string"
+              }
+            ],
+            "feesAmount": "0.02",
+            "feesCurrency": "AED",
+            "from": {
+              "dateOfBirth": "2036-10-31",
+              "displayName": "string",
+              "extensionList": [
+                {
+                  "key": "string",
+                  "value": "string"
+                }
+              ],
+              "firstName": "string",
+              "fspId": "string",
+              "idSubValue": "string",
+              "idType": "MSISDN",
+              "idValue": "string",
+              "lastName": "string",
+              "merchantClassificationCode": "string",
+              "middleName": "string",
+              "type": "CONSUMER",
+            },
+            "geoCode": {
+              "latitude": "52",
+              "longitude": "+180"
+            },
+            "initiator": "PAYER",
+            "initiatorType": "CONSUMER",
+            "note": "string",
+            "quoteId": "adbdb5be-d359-300a-bbcf-60d25a2ef3f9",
+            "subScenario": "string",
+            "to": {
+              "dateOfBirth": "2800-02-29",
+              "displayName": "string",
+              "extensionList": [
+                {
+                  "key": "string",
+                  "value": "string"
+                }
+              ],
+              "firstName": "string",
+              "fspId": "string",
+              "idSubValue": "string",
+              "idType": IdType,
+              "idValue": IBAN,
+              "lastName": "string",
+              "merchantClassificationCode": "string",
+              "middleName": "string",
+              "type": "CONSUMER"
+            },
+            "transactionId": randomUUID(),
+            "transactionType": "TRANSFER",
+            "transactionRequestId": randomUUID(),
+          };
+        const url = `${baseurl}/quoterequests`;
+        const res =  await axios.post(
+            url,
+            JSON.stringify(quoteRequest),
+            {
+                headers:{
+                    "Content-Type":"application/json"
+                }
+            }
+        );
+        expect(res.status).toEqual(200);
     });
  });
 
