@@ -1,7 +1,7 @@
-module.exports = {
-    semi: false,
-    trailingComma: 'none',
+module.exports =  {
+    semi: true,
+    trailingComma: 'all',
     singleQuote: true,
     printWidth: 120,
-    tabWidth: 2,
-};
+    tabWidth: 4, // need to be aligned with eslint "indent" rule
+  };
