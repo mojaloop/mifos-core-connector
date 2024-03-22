@@ -25,35 +25,18 @@
  --------------
  ******/
 
-import { AxiosClientFactory } from "../../src/infra/axiosHttpClient";
-import { CONFIG } from "../../src/core-connector-svc/config";
-import { FineractClientFactory } from "../../src/domain/FineractClient";
-import { TFineractConfig } from "../../src/domain/FineractClient/types";
-import { loggerFactory } from "../../src/infra/logger";
-import { CoreConnectorAggregate } from "../../src/domain";
+import { IHttpClient, ILogger, THttpResponse, TRequestOptions } from "src/domain";
 
+export class HttpClientMock implements IHttpClient{
+    logger: ILogger;
 
-const logger = loggerFactory({context: "Mifos Core Connector Tests"});
-const fineractConfig = CONFIG.fineractConfig as TFineractConfig ;
-
-
-const httpClient = AxiosClientFactory.createAxiosClientInstance();
-const fineractClient = FineractClientFactory.createClient({
-    fineractConfig,
-    httpClient, 
-    logger,
-});
-const coreConnectorAggregate = new CoreConnectorAggregate(
-    fineractConfig,
-    fineractClient,
-    logger
-);
-
-jest.setTimeout(50000);
-
- describe("Core Connector Unit Tests", ()=>{
-    test("first test",async ()=>{
-        const IBAN = "SK680720000289000000002";
-        await coreConnectorAggregate.getParties(IBAN);
-    });
- });
+    constructor(logger: ILogger){
+        this.logger = logger;
+    }
+    async send<R = unknown>(url: string, options: TRequestOptions): Promise<THttpResponse<R> | undefined> {
+        this.logger.info(`${options.method} ${url}`);
+        return;
+    }
+    
+}
+ 

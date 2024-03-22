@@ -25,35 +25,43 @@
  --------------
  ******/
 
-import { AxiosClientFactory } from "../../src/infra/axiosHttpClient";
-import { CONFIG } from "../../src/core-connector-svc/config";
-import { FineractClientFactory } from "../../src/domain/FineractClient";
-import { TFineractConfig } from "../../src/domain/FineractClient/types";
+ "use strict";
+
+import axios from "axios";
+import { CONFIG, Service } from "../../src/core-connector-svc";
 import { loggerFactory } from "../../src/infra/logger";
-import { CoreConnectorAggregate } from "../../src/domain";
 
 
-const logger = loggerFactory({context: "Mifos Core Connector Tests"});
-const fineractConfig = CONFIG.fineractConfig as TFineractConfig ;
+jest.setTimeout(1000000);
+const logger = loggerFactory({context: "Core Connector Tests"});
 
+function extractAccountFromIBAN(IBAN:string): string{
+    const accountNo = IBAN.slice(
+        (CONFIG.fineractConfig.FINERACT_BANK_COUNTRY_CODE as string).length+
+        (CONFIG.fineractConfig.FINERACT_CHECK_DIGITS as string).length+
+        (CONFIG.fineractConfig.FINERACT_BANK_ID as string).length+
+        CONFIG.fineractConfig.FINERACT_ACCOUNT_PREFIX.length
+    );
+    return accountNo;
+}
 
-const httpClient = AxiosClientFactory.createAxiosClientInstance();
-const fineractClient = FineractClientFactory.createClient({
-    fineractConfig,
-    httpClient, 
-    logger,
-});
-const coreConnectorAggregate = new CoreConnectorAggregate(
-    fineractConfig,
-    fineractClient,
-    logger
-);
+ describe("Mifos Core Connector Functional Tests", ()=>{
+    beforeAll(async ()=>{
+        await Service.start();
+    });
 
-jest.setTimeout(50000);
+    afterAll(async ()=>{
+        await Service.stop();
+    });
 
- describe("Core Connector Unit Tests", ()=>{
-    test("first test",async ()=>{
+    test("GET /parties/IBAN/{ID} Should return party info if it exists in fineract",async ()=>{
         const IBAN = "SK680720000289000000002";
-        await coreConnectorAggregate.getParties(IBAN);
+        const url = `http://${CONFIG.server.HOST?.toString()}:${CONFIG.server.PORT?.toString()}/parties/IBAN/${IBAN}`;
+        const res = await axios.get(url);   
+        logger.info(res.data);
+
+        expect(res.data["idValue"]).toEqual(extractAccountFromIBAN(IBAN));
     });
  });
+
+ 

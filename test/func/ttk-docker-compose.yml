@@ -1,0 +1,28 @@
+version: "3.8"
+networks:
+  mojaloop-net:
+    name: mojaloop-net
+
+
+services:
+  TtkBackend:
+    networks:
+      - mojaloop-net
+    ## TODO: Change the following version to standard version
+    image: mojaloop/ml-testing-toolkit:v15.6.3
+    # image: mojaloop/ml-testing-toolkit:v16.1.0-snapshot.3
+    user: root
+    volumes:
+      - "./config/ttksim/spec_files:/opt/app/spec_files"
+      - "./config/ttksim/environments:/opt/app/examples/environments"
+    ports:
+      - "4040:4040"
+      - "5050:5050"
+    environment:
+      - AUTH_ENABLED=FALSE
+    command: npm start
+    healthcheck:
+      test: ["CMD-SHELL", "nc localhost 4040"]
+      interval: 5s
+      timeout: 10s
+      retries: 3
