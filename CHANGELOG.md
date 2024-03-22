@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.3](https://github.com/mojaloop/mifos-core-connector/compare/v0.0.2...v0.0.3) (2024-03-22)
+
+
+### Features
+
+* added types and functions to calculate quotes from fineract ([a8ea7d9](https://github.com/mojaloop/mifos-core-connector/commit/a8ea7d93ae2df2ac2c66d7193f995a84a569e70a))
+* added types and functions to calculate quotes in core aggregate ([801d4ad](https://github.com/mojaloop/mifos-core-connector/commit/801d4ad62a3792b89bd78ebac886a18a68718965))
+* finished implementing quoterequests function ([3320007](https://github.com/mojaloop/mifos-core-connector/commit/33200076bb4c664f322ea205606f6fbd1aa3c8cd))
+* implemented routes to register /quoterequests ([2d6cdd7](https://github.com/mojaloop/mifos-core-connector/commit/2d6cdd7b62cb2a2bb699bb0488b3129e31943e08))
+
 ### [0.0.2](https://github.com/mojaloop/mifos-core-connector/compare/v1.1.3...v0.0.2) (2024-03-22)
 
 ### 1.1.3 (2024-03-22)
