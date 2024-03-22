@@ -35,7 +35,9 @@ import {
     TFineractGetAccountResponse, 
     TFineractGetClientResponse,
     IFineractClient,
-    FineractLookupStage
+    FineractLookupStage,
+    TCalculateQuoteDeps,
+    TCalculateQuoteResponse
 } from "./types";
 
 
@@ -170,6 +172,102 @@ export class FineractClient implements IFineractClient{
                 stage: stage
             };
         }
+    }
+
+    async calculateQuote(quoteDeps: TCalculateQuoteDeps): Promise<TCalculateQuoteResponse | undefined>{
+        // Fineract has no fees for deposits
+        const accountNo = quoteDeps.accountNo.toString();
+        this.logger.info(`Calcuating quote for party with account ${accountNo}`);
+
+        let stage = FineractLookupStage.SEARCH;
+
+        try{
+            const res = await this.searchAccount(accountNo);
+            // check if res is defined
+            if(!res){
+                this.logger.error(`Search Account threw an Exception`);
+                return {
+                    accountStatus: false,
+                    stage: stage
+                };
+            }
+            // check status code
+            if(res.statusCode == 200 && res.data.length > 0){
+                stage = FineractLookupStage.SAVINGSACCOUNT;
+                const returnedEntity = res.data[0];
+                if(!returnedEntity){
+                    this.logger.warn(`Account Search in Fineract for account ${accountNo} Returned no Account`);
+                    return {
+                        accountStatus: false,
+                        stage: stage
+                    };
+                }
+                const getAccountRes = await this.getSavingsAccount(returnedEntity.entityId);
+                // check if res is defined
+                if(!getAccountRes){
+                    this.logger.error("Get Account threw an Exception");
+                    return {
+                        accountStatus: false,
+                        stage: stage
+                    };
+                }
+                if(getAccountRes.statusCode == 200){
+                    stage = FineractLookupStage.CLIENT;
+                    if(getAccountRes.data.status.active){
+                        const getClientRes = await this.getClient(getAccountRes.data.clientId);
+                        // check if res is defined
+                        if(!getClientRes){
+                            this.logger.error(`Get Client threw an Exception`);
+                            return {
+                                accountStatus: false,
+                                stage: stage
+                            };
+                        }
+
+                        if(getClientRes.statusCode == 200){
+                            this.logger.info(`Got Client Details for account ${accountNo}`);
+                            return {
+                                accountStatus: true,
+                                stage: stage
+                            };
+                        }else{
+                            this.logger.error(`StatusCode not 200 for get ${ROUTES.clients}. Returned ${getClientRes.statusCode}`);
+                            return {
+                                accountStatus: false,
+                                stage: stage
+                            };
+                        }
+                    }else{
+                        this.logger.error(`Account with Acc No ${getAccountRes.data.accountNo} not active`);
+                        return {
+                            accountStatus: false,
+                            stage: stage
+                        };
+                    }
+                }else{
+                    this.logger.error(`StatusCode not 200 for get ${ROUTES.savingsAccount}. Returned ${getAccountRes.statusCode}`);
+                    return {
+                        accountStatus: false,
+                        stage: stage
+                    };
+                }
+                
+            }else{
+                this.logger.error(`StatusCode not 200 or is empty for ${ROUTES.search}. Returned ${res.statusCode}`);
+                return {
+                    accountStatus: false,
+                    stage: stage
+                };
+            }
+        }catch (error) {
+            this.logger.error((error as Error).message);
+            return {
+                accountStatus: false, 
+                stage: stage
+            };
+        }
+        
+        
     }
 
     private async searchAccount(accountNo: string): Promise<THttpResponse<TFineractSearchResponse> | undefined>{
