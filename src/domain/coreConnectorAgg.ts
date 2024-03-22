@@ -50,17 +50,19 @@ export class CoreConnectorAggregate{
 
         // Call Fineract to lookup account
         const lookupRes = await this.fineractClient.lookupPartyInfo(accountNo);
-        
+
         if(!lookupRes || !lookupRes.data){
+            this.logger.warn(`no lookupPartyInfo by accountNo`, { accountNo });
             return;
         }
 
         if(lookupRes.stage == FineractLookupStage.CLIENT && lookupRes.status == 200 && lookupRes.currency != null){
-            const party = {
+          // todo: move to DTO
+          const party = {
                 data : {
                     dateOfBirth: "",
                     displayName: lookupRes.data.displayName,
-                    extensionList: [
+                    extensionList: [ // why do we need this field?
                         {
                             key: "",
                             value: ""
@@ -80,7 +82,7 @@ export class CoreConnectorAggregate{
                 },
                 statusCode: lookupRes.status
             };
-            this.logger.info(`Party found \n${JSON.stringify(party)}`);
+            this.logger.info(`Party found`, { party });
             return party;
         }else{
             return;
@@ -98,8 +100,10 @@ export class CoreConnectorAggregate{
         const quoteRes = await this.fineractClient.calculateQuote({accountNo:accountNo});
 
         if(!quoteRes || !quoteRes.accountStatus){
+          // todo: add log here
             return;
         }else{
+          // todo: move mapping logic to DTO
             const quoteResponse: TQuoteResponse = {
                 expiration: "3092-12-31T23:17:34.658-06:45",
                 extensionList: [
@@ -130,7 +134,7 @@ export class CoreConnectorAggregate{
     extractAccountFromIBAN(IBAN:string): string{
         // if(!this.validateIBAN(IBAN)){
         //     throw new Error("IBAN is invalid");
-        // } todo think how to validate account numbers 
+        // } todo think how to validate account numbers
         const accountNo = IBAN.slice(
             this.fineractConfig.FINERACT_BANK_COUNTRY_CODE.length+
             this.fineractConfig.FINERACT_CHECK_DIGITS.length+
@@ -140,29 +144,30 @@ export class CoreConnectorAggregate{
         return accountNo;
     }
 
-    validateIBAN(iban: string): boolean { 
+    // todo: please, do not comment each line
+    validateIBAN(iban: string): boolean {
        // Remove spaces and convert to uppercase
         iban = iban.replace(/\s+/g, '').toUpperCase();
-        
+
         // Check if IBAN is of the correct length for the specified country
         if (iban.length < 2 || iban.length > 34) {
             return false;
         }
-        
+
         // Check if IBAN contains only alphanumeric characters
         if (!/^[A-Z0-9]+$/.test(iban)) {
             return false;
         }
-        
+
         // Move the first 4 characters to the end
         iban = iban.substring(4) + iban.substring(0, 4);
-        
+
         // Replace letters with digits (A=10, B=11, ..., Z=35)
         iban = iban.replace(/[A-Z]/g, (char) => (char.charCodeAt(0) - 55).toString());
-        
+
         // Parse the IBAN as a number
         const ibanNumber = BigInt(iban);
-        
+
         // Check if IBAN is valid (i.e., IBAN number modulo 97 equals 1)
         return ibanNumber % BigInt(97) === BigInt(1);
     }

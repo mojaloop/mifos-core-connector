@@ -34,12 +34,13 @@ import { loggerFactory } from "../../src/infra/logger";
 import { TQuoteRequest } from "../../src/domain/interfaces";
 
 
-jest.setTimeout(1000000);
+jest.setTimeout(1000000); // why do we need such timeout?
 const logger = loggerFactory({context: "Core Connector Tests"});
 const IBAN = "SK680720000289000000002";
 const IdType = "IBAN";
 const baseurl = `http://${CONFIG.server.HOST?.toString()}:${CONFIG.server.PORT?.toString()}`;
 
+// todo: why do we copy-paste the same code from CoreConnectorAggregate.extractAccountFromIBAN
 function extractAccountFromIBAN(IBAN:string): string{
     const accountNo = IBAN.slice(
         (CONFIG.fineractConfig.FINERACT_BANK_COUNTRY_CODE as string).length+
@@ -61,7 +62,7 @@ function extractAccountFromIBAN(IBAN:string): string{
 
     test("GET /parties/IBAN/{ID} Should return party info if it exists in fineract",async ()=>{
         const url = `${baseurl}/parties/IBAN/${IBAN}`;
-        const res = await axios.get(url);   
+        const res = await axios.get(url);
         logger.info(res.data);
 
         expect(res.data["idValue"]).toEqual(extractAccountFromIBAN(IBAN));
@@ -147,4 +148,3 @@ function extractAccountFromIBAN(IBAN:string): string{
     });
  });
 
- 

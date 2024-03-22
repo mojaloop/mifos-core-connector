@@ -25,8 +25,12 @@
  --------------
  ******/
 
- "use strict";
+'use strict';
 
-import { Service } from "./core-connector-svc/Service";
+// todo: uncomment it after we use convict everywhere
+// import { config } from 'dotenv';
+// config()
 
- Service.start();
+import { Service } from './core-connector-svc';
+
+Service.start();

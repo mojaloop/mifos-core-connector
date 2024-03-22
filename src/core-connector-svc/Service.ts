@@ -27,17 +27,19 @@ optionally within square brackets <email>.
 
 "use strict";
 
-import { Server } from "@hapi/hapi";
+import { Server, ServerOptions } from "@hapi/hapi";
 import { IHttpClient } from "../domain";
 import { CoreConnectorAggregate } from "../domain";
 import { FineractClient } from "../domain/FineractClient/FineractClient";
 import { AxiosClientFactory } from "../infra/axiosHttpClient";
 import { TFineractConfig } from "../domain/FineractClient/types";
 import { CONFIG } from "./config";
+import config from "../config"; // todo: use this config everywhere
 import { CoreConnectorRoutes } from "./coreConnectorRoutes";
 import { loggerFactory } from "../infra/logger";
+import { createPlugins } from '../plugins';
 
-const logger = loggerFactory({ context: 'Mifos Core Connector' });
+const logger = loggerFactory({ context: 'MifosCC' });
 
 export class Service {
     static coreConnectorAggregate: CoreConnectorAggregate;
@@ -49,8 +51,9 @@ export class Service {
             httpClient = AxiosClientFactory.createAxiosClientInstance();
         }
         this.httpClient = httpClient;
+        // todo: don't need this - use convict to deal with env vars
         if(
-            !CONFIG.fineractConfig.FINERACT_ACCOUNT_PREFIX || 
+            !CONFIG.fineractConfig.FINERACT_ACCOUNT_PREFIX ||
             !CONFIG.fineractConfig.FINERACT_AUTH_MODE ||
             !CONFIG.fineractConfig.FINERACT_BANK_COUNTRY_CODE ||
             !CONFIG.fineractConfig.FINERACT_BANK_ID ||
@@ -71,14 +74,12 @@ export class Service {
     }
 
     static async setupAndStartUpServer(){
-        return new Promise<void>((resolve)=>{
             if(!CONFIG.server.PORT || !CONFIG.server.HOST){
                 throw new Error("Please set the environment variables as used in config.ts through a .env file. Refer to .env.example");
             }
-            this.server = new Server({
-                port: CONFIG.server.PORT,
-                host: CONFIG.server.HOST,
-            });
+
+            this.server = new Server(config.get('server'));
+            await this.server.register(createPlugins({ logger }));
 
             const coreConnectorRoutes = new CoreConnectorRoutes(this.coreConnectorAggregate, logger);
             this.server.route(coreConnectorRoutes.getRoutes());
@@ -89,11 +90,8 @@ export class Service {
                     return h.response('404 Error! Page Not Found!').code(404);
                 },
             });
-            this.server.start();
+            await this.server.start();
             logger.info(`Core Connector Server running at ${this.server.info.uri}`);
-
-            resolve();
-        });
     }
 
     static async stop(){

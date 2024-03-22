@@ -30,8 +30,9 @@
 import { config } from 'dotenv';
 import { IdType } from '../domain/FineractClient/types';
 
-config();
+config(); // todo: we don't need it in production
 
+// todo: use convict to deal with env vars
  export const CONFIG = {
     fineractConfig :{
         FINERACT_BASE_URL: process.env["FINERACT_BASE_URL"] != null ? process.env["FINERACT_BASE_URL"] : null,
@@ -46,7 +47,7 @@ config();
         FINERACT_ID_TYPE: IdType.IBAN
     },
     server: {
-        HOST: process.env["HOST"], 
+        HOST: process.env["HOST"],
         PORT: process.env["PORT"],
     }
  };

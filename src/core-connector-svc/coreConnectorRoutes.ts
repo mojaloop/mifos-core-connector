@@ -27,14 +27,13 @@ optionally within square brackets <email>.
 
 "use strict";
 
-import { Request, ResponseToolkit } from "@hapi/hapi";
-import { ReqRefDefaults, ServerRoute } from "@hapi/hapi/lib/types";
+import { Request, ResponseToolkit, ServerRoute } from "@hapi/hapi";
 import { CoreConnectorAggregate } from "src/domain/coreConnectorAgg";
 import { ILogger, IRoutes, TQuoteRequest } from "src/domain/interfaces";
 
 export class CoreConnectorRoutes implements IRoutes{
     private readonly aggregate: CoreConnectorAggregate;
-    private readonly routes: ServerRoute<ReqRefDefaults>[] = [];
+    private readonly routes: ServerRoute[] = [];
     private readonly logger : ILogger;
 
     constructor(aggregate: CoreConnectorAggregate, logger: ILogger){
@@ -50,16 +49,17 @@ export class CoreConnectorRoutes implements IRoutes{
         this.routes.push({
            method: ["POST"],
            path: `/quoterequests`,
-           handler: this.quoteRequests.bind(this) 
+           handler: this.quoteRequests.bind(this)
         });
     }
 
-    getRoutes(): ServerRoute<ReqRefDefaults>[] {
+    getRoutes(): ServerRoute[] {
         return this.routes;
     }
 
     private async getParties(request: Request, h: ResponseToolkit){ //todo change to openapi signature
-        this.logger.info("Received GET request /parties/{IdType}/{ID}");
+        // this.logger.info("Received GET request /parties/{IdType}/{ID}");
+        // we don't need this - loggingPlugin will log such info for any incoming requests
         const IBAN = request.params["ID"];
 
         const result = await this.aggregate.getParties(IBAN);
@@ -79,6 +79,7 @@ export class CoreConnectorRoutes implements IRoutes{
 
         if(!result){
             return h.response({"statusCode":"3204", "message":"Party not found"}).code(404);
+            // todo: should the message here be "Party not found"? (maybe, quote?)
         }else{
             return h.response(result).code(200);
         }
