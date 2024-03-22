@@ -28,7 +28,7 @@
  "use strict";
 
 import { FineractLookupStage, IFineractClient, IdType, PartyType, TFineractConfig } from "./FineractClient/types";
-import { ILogger, TLookupPartyInfoResponse } from "./interfaces";
+import { ILogger, TLookupPartyInfoResponse, TQuoteResponse, TQuoteRequest } from "./interfaces";
 
 export class CoreConnectorAggregate{
     public IdType : string;
@@ -87,7 +87,50 @@ export class CoreConnectorAggregate{
         }
     }
 
-    private extractAccountFromIBAN(IBAN:string): string{
+    async quoterequest(quoterequest: TQuoteRequest):Promise<TQuoteResponse | undefined>{
+        // Currently fineract currently does not charge for deposits
+        if(quoterequest.to.idType != this.IdType){
+            throw new Error("Unsupported ID Type");
+        }
+        this.logger.info(`Get Parties for ${this.IdType} ${quoterequest.to.idValue}`);
+        const accountNo = this.extractAccountFromIBAN(quoterequest.to.idValue);
+
+        const quoteRes = await this.fineractClient.calculateQuote({accountNo:accountNo});
+
+        if(!quoteRes || !quoteRes.accountStatus){
+            return;
+        }else{
+            const quoteResponse: TQuoteResponse = {
+                expiration: "3092-12-31T23:17:34.658-06:45",
+                extensionList: [
+                  {
+                    "key": "string",
+                    "value": "string"
+                  }
+                ],
+                geoCode: {
+                  latitude: "34",
+                  longitude: "-140"
+                },
+                payeeFspCommissionAmount: "0",
+                payeeFspCommissionAmountCurrency: quoterequest.currency,
+                payeeFspFeeAmount: "0",
+                payeeFspFeeAmountCurrency: quoterequest.currency,
+                payeeReceiveAmount: quoterequest.amount,
+                payeeReceiveAmountCurrency: quoterequest.currency,
+                quoteId: quoterequest.quoteId,
+                transactionId: quoterequest.transactionId,
+                transferAmount: quoterequest.amount,
+                transferAmountCurrency: quoterequest.currency
+              };
+            return quoteResponse;
+        }
+    }
+
+    extractAccountFromIBAN(IBAN:string): string{
+        // if(!this.validateIBAN(IBAN)){
+        //     throw new Error("IBAN is invalid");
+        // } todo think how to validate account numbers 
         const accountNo = IBAN.slice(
             this.fineractConfig.FINERACT_BANK_COUNTRY_CODE.length+
             this.fineractConfig.FINERACT_CHECK_DIGITS.length+
@@ -95,6 +138,33 @@ export class CoreConnectorAggregate{
             this.fineractConfig.FINERACT_ACCOUNT_PREFIX.length
         );
         return accountNo;
+    }
+
+    validateIBAN(iban: string): boolean { 
+       // Remove spaces and convert to uppercase
+        iban = iban.replace(/\s+/g, '').toUpperCase();
+        
+        // Check if IBAN is of the correct length for the specified country
+        if (iban.length < 2 || iban.length > 34) {
+            return false;
+        }
+        
+        // Check if IBAN contains only alphanumeric characters
+        if (!/^[A-Z0-9]+$/.test(iban)) {
+            return false;
+        }
+        
+        // Move the first 4 characters to the end
+        iban = iban.substring(4) + iban.substring(0, 4);
+        
+        // Replace letters with digits (A=10, B=11, ..., Z=35)
+        iban = iban.replace(/[A-Z]/g, (char) => (char.charCodeAt(0) - 55).toString());
+        
+        // Parse the IBAN as a number
+        const ibanNumber = BigInt(iban);
+        
+        // Check if IBAN is valid (i.e., IBAN number modulo 97 equals 1)
+        return ibanNumber % BigInt(97) === BigInt(1);
     }
 
  }

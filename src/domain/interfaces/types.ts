@@ -28,6 +28,9 @@
  "use strict";
 
 import { ReqRefDefaults, ServerRoute } from "@hapi/hapi/lib/types";
+import {SDKSchemeAdapter} from "@mojaloop/api-snippets";
+
+export type TQuoteRequest = SDKSchemeAdapter.V2_0_0.Backend.Types.quoteRequest;
 
  export type THttpResponse<R> = {
     data: R
@@ -41,21 +44,7 @@ import { ReqRefDefaults, ServerRoute } from "@hapi/hapi/lib/types";
     headers?: unknown | undefined;
  }
 
-export type Quote = {
-   expiration: string;
-   extensionList: unknown[];
-   geoCode: unknown;
-   payeeFspCommissionAmount: string;
-   payeeFspCommissionAmountCurrency: string;
-   payeeFspFeeAmount: string;
-   payeeFspFeeAmountCurrency: string;
-   payeeReceiveAmount: string;
-   payeeReceiveAmountCurrency: string;
-   quoteId: string;
-   transactionId: string;
-   transferAmount: string;
-   transferAmountCurrency: string;
-};
+export type TQuoteResponse = SDKSchemeAdapter.V2_0_0.Backend.Types.quoteResponse;
 
 export type Payee = {
    dateOfBirth: string;
