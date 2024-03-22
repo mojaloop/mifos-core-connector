@@ -24,13 +24,13 @@
 
  --------------
  ******/
-
+import { randomUUID } from "crypto";
 import { AxiosClientFactory } from "../../src/infra/axiosHttpClient";
 import { CONFIG } from "../../src/core-connector-svc/config";
 import { FineractClientFactory } from "../../src/domain/FineractClient";
 import { TFineractConfig } from "../../src/domain/FineractClient/types";
 import { loggerFactory } from "../../src/infra/logger";
-import { CoreConnectorAggregate } from "../../src/domain";
+import { CoreConnectorAggregate, TQuoteRequest } from "../../src/domain";
 
 
 const logger = loggerFactory({context: "Mifos Core Connector Tests"});
@@ -49,11 +49,84 @@ const coreConnectorAggregate = new CoreConnectorAggregate(
     logger
 );
 
+const IBAN = "SK680720000289000000002";
+
 jest.setTimeout(50000);
 
- describe("Core Connector Unit Tests", ()=>{
-    test("first test",async ()=>{
-        const IBAN = "SK680720000289000000002";
-        await coreConnectorAggregate.getParties(IBAN);
+ describe("Core Connector Aggregate Unit Tests", ()=>{
+    test("Aggregate Get Parties. Should return status code 200 for an existent account",async ()=>{
+        const res = await coreConnectorAggregate.getParties(IBAN);
+        expect(res?.statusCode).toEqual(200);
+    });
+
+    test("Aggregate Qoute Request. Should return if account is active ", async ()=>{
+        const quoteRequest : TQuoteRequest= {
+            "homeR2PTransactionId": "string",
+            "amount": "5.6",
+            "amountType": "SEND",
+            "currency": "AED",
+            "expiration": "6000-02-29T20:02:59.152Z",
+            "extensionList": [
+              {
+                "key": "string",
+                "value": "string"
+              }
+            ],
+            "feesAmount": "0.02",
+            "feesCurrency": "AED",
+            "from": {
+              "dateOfBirth": "2036-10-31",
+              "displayName": "string",
+              "extensionList": [
+                {
+                  "key": "string",
+                  "value": "string"
+                }
+              ],
+              "firstName": "string",
+              "fspId": "string",
+              "idSubValue": "string",
+              "idType": "MSISDN",
+              "idValue": "string",
+              "lastName": "string",
+              "merchantClassificationCode": "string",
+              "middleName": "string",
+              "type": "CONSUMER",
+            },
+            "geoCode": {
+              "latitude": "52",
+              "longitude": "+180"
+            },
+            "initiator": "PAYER",
+            "initiatorType": "CONSUMER",
+            "note": "string",
+            "quoteId": "adbdb5be-d359-300a-bbcf-60d25a2ef3f9",
+            "subScenario": "string",
+            "to": {
+              "dateOfBirth": "2800-02-29",
+              "displayName": "string",
+              "extensionList": [
+                {
+                  "key": "string",
+                  "value": "string"
+                }
+              ],
+              "firstName": "string",
+              "fspId": "string",
+              "idSubValue": "string",
+              "idType": fineractConfig.FINERACT_ID_TYPE,
+              "idValue": IBAN,
+              "lastName": "string",
+              "merchantClassificationCode": "string",
+              "middleName": "string",
+              "type": "CONSUMER"
+            },
+            "transactionId": randomUUID(),
+            "transactionType": "TRANSFER",
+            "transactionRequestId": randomUUID(),
+          };
+        const res = await coreConnectorAggregate.quoterequest(quoteRequest);
+
+        expect(res).toBeTruthy();
     });
  });

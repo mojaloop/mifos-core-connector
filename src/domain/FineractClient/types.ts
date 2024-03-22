@@ -175,11 +175,13 @@ export type TFineractGetClientResponse = {
     }
 }
 
+
 export interface IFineractClient {
     fineractConfig: TFineractConfig,
     httpClient: IHttpClient
     logger: ILogger
     lookupPartyInfo(accountNo: string):Promise<TLookupResponseInfo | undefined>;
+    calculateQuote(quoteDeps: TCalculateQuoteDeps): Promise<TCalculateQuoteResponse | undefined>;
 }
 
 export type TFineractClientFactoryDeps = {
@@ -187,3 +189,12 @@ export type TFineractClientFactoryDeps = {
     httpClient: IHttpClient,
     logger: ILogger
 }
+
+export type TCalculateQuoteDeps = {
+    accountNo: string
+ }
+
+ export type TCalculateQuoteResponse = {
+    accountStatus : boolean 
+    stage: string
+ }
