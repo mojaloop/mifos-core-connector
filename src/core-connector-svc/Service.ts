@@ -80,7 +80,7 @@ export class Service {
                 host: CONFIG.server.HOST,
             });
 
-            const coreConnectorRoutes = new CoreConnectorRoutes(this.coreConnectorAggregate);
+            const coreConnectorRoutes = new CoreConnectorRoutes(this.coreConnectorAggregate, logger);
             this.server.route(coreConnectorRoutes.getRoutes());
             this.server.route({
                 method: '*',

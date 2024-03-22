@@ -30,19 +30,27 @@ optionally within square brackets <email>.
 import { Request, ResponseToolkit } from "@hapi/hapi";
 import { ReqRefDefaults, ServerRoute } from "@hapi/hapi/lib/types";
 import { CoreConnectorAggregate } from "src/domain/coreConnectorAgg";
-import { IRoutes } from "src/domain/interfaces";
+import { ILogger, IRoutes, TQuoteRequest } from "src/domain/interfaces";
 
 export class CoreConnectorRoutes implements IRoutes{
     private readonly aggregate: CoreConnectorAggregate;
     private readonly routes: ServerRoute<ReqRefDefaults>[] = [];
+    private readonly logger : ILogger;
 
-    constructor(aggregate: CoreConnectorAggregate){
+    constructor(aggregate: CoreConnectorAggregate, logger: ILogger){
         this.aggregate = aggregate;
+        this.logger = logger.child({context:"MCC Core Connector Routes"});
 
         this.routes.push({
             method: ["GET"],
             path: `/parties/${this.aggregate.IdType.toString()}/{ID}`,
             handler: this.getParties.bind(this)
+        });
+
+        this.routes.push({
+           method: ["POST"],
+           path: `/quoterequests`,
+           handler: this.quoteRequests.bind(this) 
         });
     }
 
@@ -51,7 +59,7 @@ export class CoreConnectorRoutes implements IRoutes{
     }
 
     private async getParties(request: Request, h: ResponseToolkit){ //todo change to openapi signature
-        console.log("Received GET request parties");
+        this.logger.info("Received GET request /parties/{IdType}/{ID}");
         const IBAN = request.params["ID"];
 
         const result = await this.aggregate.getParties(IBAN);
@@ -60,6 +68,19 @@ export class CoreConnectorRoutes implements IRoutes{
             return h.response({"statusCode":"3204", "message":"Party not found"}).code(404);
         }else{
             return h.response(result.data).code(200);
+        }
+    }
+
+    private async quoteRequests(request: Request, h:ResponseToolkit){
+        this.logger.info("Raeceived POST request /quoterequests");
+        const quote = request.payload as TQuoteRequest;
+
+        const result = await this.aggregate.quoterequest(quote);
+
+        if(!result){
+            return h.response({"statusCode":"3204", "message":"Party not found"}).code(404);
+        }else{
+            return h.response(result).code(200);
         }
     }
 }
