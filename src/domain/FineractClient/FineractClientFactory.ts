@@ -24,9 +24,18 @@
 
  --------------
  ******/
+"use strict";
 
- "use strict";
 
-import { Service } from "./core-connector-svc/Service";
+import { FineractClient } from "./FineractClient";
+import { TFineractClientFactoryDeps } from "./types";
 
- Service.start();
+export class FineractClientFactory{
+    static createClient(finClientfactoryDeps: TFineractClientFactoryDeps){
+        return new FineractClient(
+            finClientfactoryDeps.fineractConfig,
+            finClientfactoryDeps.httpClient,
+            finClientfactoryDeps.logger
+        );
+    }
+}

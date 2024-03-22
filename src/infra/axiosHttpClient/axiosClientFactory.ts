@@ -27,6 +27,10 @@
 
  "use strict";
 
-import { Service } from "./core-connector-svc/Service";
+import { AxiosHttpClient } from "./axiosClient";
 
- Service.start();
+ export class AxiosClientFactory{
+    static createAxiosClientInstance(){
+        return new AxiosHttpClient();
+    }
+ }

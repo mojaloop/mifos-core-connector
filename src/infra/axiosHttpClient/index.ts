@@ -27,6 +27,4 @@
 
  "use strict";
 
-import { Service } from "./core-connector-svc/Service";
-
- Service.start();
+ export * from "./axiosClientFactory";

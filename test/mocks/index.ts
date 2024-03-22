@@ -27,5 +27,4 @@ optionally within square brackets <email>.
 
 "use strict";
 
-export * from "./Service";
-export * from "./config";
+export * from "./httpClientMock";

@@ -27,6 +27,63 @@
 
  "use strict";
 
-import { Service } from "./core-connector-svc/Service";
+import { ReqRefDefaults, ServerRoute } from "@hapi/hapi/lib/types";
 
- Service.start();
+ export type THttpResponse<R> = {
+    data: R
+    statusCode: number
+ }
+
+ export type TRequestOptions = {
+    payload?:unknown | undefined;
+    timeout_ms?:number; 
+    method?: string;
+    headers?: unknown | undefined;
+ }
+
+export type Quote = {
+   expiration: string;
+   extensionList: unknown[];
+   geoCode: unknown;
+   payeeFspCommissionAmount: string;
+   payeeFspCommissionAmountCurrency: string;
+   payeeFspFeeAmount: string;
+   payeeFspFeeAmountCurrency: string;
+   payeeReceiveAmount: string;
+   payeeReceiveAmountCurrency: string;
+   quoteId: string;
+   transactionId: string;
+   transferAmount: string;
+   transferAmountCurrency: string;
+};
+
+export type Payee = {
+   dateOfBirth: string;
+   displayName: string;
+   extensionList: unknown[];
+   firstName: string;
+   fspId: string;
+   idSubValue: string;
+   idType: string;
+   idValue: string;
+   lastName: string;
+   merchantClassificationCode: string;
+   middleName: string;
+   type: string;
+   supportedCurrencies: string;
+   kycInformation: string;
+};
+
+export type Transfer = {
+   completedTimestamp: string;
+   fulfilment: string;
+   homeTransactionId: string;
+   transferState: string;
+};
+
+export type TLookupPartyInfoResponse = THttpResponse<Payee>;
+
+
+export interface IRoutes{
+   getRoutes():ServerRoute<ReqRefDefaults>[]
+}

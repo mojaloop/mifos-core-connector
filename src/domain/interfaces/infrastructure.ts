@@ -27,5 +27,32 @@ optionally within square brackets <email>.
 
 "use strict";
 
-export * from "./Service";
-export * from "./config";
+import {THttpResponse, TRequestOptions} from "./types";
+
+export type TJson =
+  | string
+  | number
+  | boolean
+  | { [x: string]: TJson }
+  | Array<TJson>;
+  
+export interface IHttpClient{
+    send<R = unknown>(url:string, options: TRequestOptions):Promise<THttpResponse<R> | undefined>;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type TLogMethod = (message: string, meta?: any) => void;
+// todo: - think, if message should be only string
+//       - how to pass Error object
+//       - what type meta should have?
+
+export interface ILogger { // based on @mojaloop/central-services-logger impl.
+    error: TLogMethod;
+    warn: TLogMethod;
+    trace: TLogMethod;
+    info: TLogMethod;
+    verbose: TLogMethod;
+    debug: TLogMethod;
+    silly: TLogMethod;
+    child(context?: TJson): ILogger;
+}

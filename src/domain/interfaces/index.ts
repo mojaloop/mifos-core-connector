@@ -27,6 +27,9 @@
 
  "use strict";
 
-import { Service } from "./core-connector-svc/Service";
-
- Service.start();
+//  export * from "./infrastructure";
+ export * from "./types";
+ export * from "./infrastructure";
+ 
+ 
+ 

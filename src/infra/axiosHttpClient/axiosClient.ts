@@ -27,6 +27,30 @@
 
  "use strict";
 
-import { Service } from "./core-connector-svc/Service";
+import axios, { AxiosHeaders } from "axios";
+import { THttpResponse,TRequestOptions } from "../../domain";
+import { IHttpClient } from "../../domain";
 
- Service.start();
+ export class AxiosHttpClient implements IHttpClient{
+     async send<R = unknown>(url: string, options: TRequestOptions): Promise<THttpResponse<R> | undefined> {
+        const method  = options.method;
+        const data = JSON.stringify(options.payload);
+        const timeout = options.timeout_ms;
+        const headers = options.headers as AxiosHeaders;
+
+        try {
+            const res = await axios.request({
+                url,
+                method,
+                data,
+                timeout,
+                headers
+            });
+            return {data: res.data, statusCode: res.status};
+        } catch (error) {
+            console.error(error); // todo. Replace with a proper logger
+            return;
+        }
+     }
+
+ }

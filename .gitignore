@@ -135,3 +135,6 @@ dist
 
 #MAC
 .DS_Store
+
+#Environment Variables
+.env

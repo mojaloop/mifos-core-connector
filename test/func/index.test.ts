@@ -27,6 +27,41 @@
 
  "use strict";
 
-import { Service } from "./core-connector-svc/Service";
+import axios from "axios";
+import { CONFIG, Service } from "../../src/core-connector-svc";
+import { loggerFactory } from "../../src/infra/logger";
 
- Service.start();
+
+jest.setTimeout(1000000);
+const logger = loggerFactory({context: "Core Connector Tests"});
+
+function extractAccountFromIBAN(IBAN:string): string{
+    const accountNo = IBAN.slice(
+        (CONFIG.fineractConfig.FINERACT_BANK_COUNTRY_CODE as string).length+
+        (CONFIG.fineractConfig.FINERACT_CHECK_DIGITS as string).length+
+        (CONFIG.fineractConfig.FINERACT_BANK_ID as string).length+
+        CONFIG.fineractConfig.FINERACT_ACCOUNT_PREFIX.length
+    );
+    return accountNo;
+}
+
+ describe("Mifos Core Connector Functional Tests", ()=>{
+    beforeAll(async ()=>{
+        await Service.start();
+    });
+
+    afterAll(async ()=>{
+        await Service.stop();
+    });
+
+    test("GET /parties/IBAN/{ID} Should return party info if it exists in fineract",async ()=>{
+        const IBAN = "SK680720000289000000002";
+        const url = `http://${CONFIG.server.HOST?.toString()}:${CONFIG.server.PORT?.toString()}/parties/IBAN/${IBAN}`;
+        const res = await axios.get(url);   
+        logger.info(res.data);
+
+        expect(res.data["idValue"]).toEqual(extractAccountFromIBAN(IBAN));
+    });
+ });
+
+ 

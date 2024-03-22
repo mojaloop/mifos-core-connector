@@ -24,3 +24,6 @@
 
  --------------
  ******/
+
+export * from "./coreConnectorAgg";
+export * from "./interfaces";

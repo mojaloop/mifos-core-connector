@@ -27,5 +27,40 @@ optionally within square brackets <email>.
 
 "use strict";
 
-export * from "./Service";
-export * from "./config";
+import { Request, ResponseToolkit } from "@hapi/hapi";
+import { ReqRefDefaults, ServerRoute } from "@hapi/hapi/lib/types";
+import { CoreConnectorAggregate } from "src/domain/coreConnectorAgg";
+import { IRoutes } from "src/domain/interfaces";
+
+export class CoreConnectorRoutes implements IRoutes{
+    private readonly aggregate: CoreConnectorAggregate;
+    private readonly routes: ServerRoute<ReqRefDefaults>[] = [];
+
+    constructor(aggregate: CoreConnectorAggregate){
+        this.aggregate = aggregate;
+
+        this.routes.push({
+            method: ["GET"],
+            path: `/parties/${this.aggregate.IdType.toString()}/{ID}`,
+            handler: this.getParties.bind(this)
+        });
+    }
+
+    getRoutes(): ServerRoute<ReqRefDefaults>[] {
+        return this.routes;
+    }
+
+    private async getParties(request: Request, h: ResponseToolkit){ //todo change to openapi signature
+        console.log("Received GET request parties");
+        const IBAN = request.params["ID"];
+
+        const result = await this.aggregate.getParties(IBAN);
+
+        if(!result){
+            return h.response({"statusCode":"3204", "message":"Party not found"}).code(404);
+        }else{
+            return h.response(result.data).code(200);
+        }
+    }
+}
+

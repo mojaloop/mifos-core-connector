@@ -27,6 +27,26 @@
 
  "use strict";
 
-import { Service } from "./core-connector-svc/Service";
+import { config } from 'dotenv';
+import { IdType } from '../domain/FineractClient/types';
 
- Service.start();
+config();
+
+ export const CONFIG = {
+    fineractConfig :{
+        FINERACT_BASE_URL: process.env["FINERACT_BASE_URL"] != null ? process.env["FINERACT_BASE_URL"] : null,
+        FINERACT_TENTANT_ID: process.env["FINERACT_TENTANT_ID"] != null ? process.env["FINERACT_TENTANT_ID"]: null,
+        FINERACT_AUTH_MODE: process.env["FINERACT_AUTH_MODE"] != null ? process.env["FINERACT_AUTH_MODE"]: null,
+        FINERACT_USERNAME: process.env["FINERACT_USERNAME"] != null ? process.env["FINERACT_USERNAME"]: null,
+        FINERACT_PASSWORD: process.env["FINERACT_PASSWORD"] != null ? process.env["FINERACT_PASSWORD"]: null,
+        FINERACT_BANK_ID: process.env["FINERACT_BANK_ID"] != null ? process.env["FINERACT_BANK_ID"]: null,
+        FINERACT_ACCOUNT_PREFIX: process.env["FINERACT_ACCOUNT_PREFIX"] != null ? process.env["FINERACT_ACCOUNT_PREFIX"]: "",
+        FINERACT_BANK_COUNTRY_CODE: process.env["FINERACT_BANK_COUNTRY_CODE"] != null ? process.env["FINERACT_BANK_COUNTRY_CODE"]: null,
+        FINERACT_CHECK_DIGITS: process.env["FINERACT_CHECK_DIGITS"] != null ? process.env["FINERACT_CHECK_DIGITS"]: null,
+        FINERACT_ID_TYPE: IdType.IBAN
+    },
+    server: {
+        HOST: process.env["HOST"], 
+        PORT: process.env["PORT"],
+    }
+ };

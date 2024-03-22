@@ -25,8 +25,18 @@
  --------------
  ******/
 
- "use strict";
+import { IHttpClient, ILogger, THttpResponse, TRequestOptions } from "src/domain";
 
-import { Service } from "./core-connector-svc/Service";
+export class HttpClientMock implements IHttpClient{
+    logger: ILogger;
 
- Service.start();
+    constructor(logger: ILogger){
+        this.logger = logger;
+    }
+    async send<R = unknown>(url: string, options: TRequestOptions): Promise<THttpResponse<R> | undefined> {
+        this.logger.info(`${options.method} ${url}`);
+        return;
+    }
+    
+}
+ 
