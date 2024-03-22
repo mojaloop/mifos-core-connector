@@ -24,6 +24,6 @@
 
  --------------
  ******/
+"use strict";
 
-export * from "./coreConnectorAgg";
-export * from "./interfaces";
+export * from "./FineractClientFactory";

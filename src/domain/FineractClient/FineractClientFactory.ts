@@ -24,6 +24,18 @@
 
  --------------
  ******/
+"use strict";
 
-export * from "./coreConnectorAgg";
-export * from "./interfaces";
+
+import { FineractClient } from "./FineractClient";
+import { TFineractClientFactoryDeps } from "./types";
+
+export class FineractClientFactory{
+    static createClient(finClientfactoryDeps: TFineractClientFactoryDeps){
+        return new FineractClient(
+            finClientfactoryDeps.fineractConfig,
+            finClientfactoryDeps.httpClient,
+            finClientfactoryDeps.logger
+        );
+    }
+}
