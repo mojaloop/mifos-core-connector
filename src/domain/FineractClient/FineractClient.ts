@@ -28,11 +28,11 @@
  "use strict";
 
 import { IHttpClient, ILogger, THttpResponse } from "../interfaces";
-import { 
+import {
     TLookupResponseInfo,
-    TFineractConfig, 
-    TFineractSearchResponse, 
-    TFineractGetAccountResponse, 
+    TFineractConfig,
+    TFineractSearchResponse,
+    TFineractGetAccountResponse,
     TFineractGetClientResponse,
     IFineractClient,
     FineractLookupStage,
@@ -64,6 +64,7 @@ export class FineractClient implements IFineractClient{
         this.logger = logger;
     }
 
+    // todo:  refactor - function is too big (hard to read), lots of code duplication
     async lookupPartyInfo(accountNo: string):Promise<TLookupResponseInfo | undefined>{
         this.logger.info(`Looking up party with account ${accountNo}`);
         const res = await this.getAccountFineractIdWithAccountNo(accountNo);
@@ -74,16 +75,16 @@ export class FineractClient implements IFineractClient{
         // Fineract has no fees for deposits
         const accountNo = quoteDeps.accountNo.toString();
         this.logger.info(`Calcuating quote for party with account ${accountNo}`);
-        const res = this.getAccountFineractIdWithAccountNo(quoteDeps.accountNo);  
+        const res = this.getAccountFineractIdWithAccountNo(quoteDeps.accountNo);
         return res;
-        
+
     }
 
     async transfer(transferDeps: TFineracttransferDeps): Promise<TFineractTransactionResponse | undefined>{
         const accountNo = transferDeps.transaction.accountNumber.toString();
         const amount = transferDeps.transaction.transactionAmount.toString();
         this.logger.info(`Transaction for party with account ${accountNo} worth ${amount}`);
-        
+
         try {
             const transferRes = await this.sendTransfer(transferDeps);
             if(!transferRes){
@@ -116,12 +117,12 @@ export class FineractClient implements IFineractClient{
             }
             // check status code
             if(res.statusCode == 200 && res.data.length > 0){
-                stage = FineractLookupStage.SAVINGSACCOUNT;
+                stage = FineractLookupStage.SAVINGSACCOUNT; // todo: where do you use it?
                 const returnedEntity = res.data[0];
                 if(!returnedEntity){
                     this.logger.warn(`Account Search in Fineract for account ${accountNo} Returned no Account`);
                     return {
-                        data: undefined, 
+                        data: undefined,
                         message: `Account Search in Fineract for account ${accountNo} Returned no Account`,
                         status: res.statusCode,
                         stage: FineractLookupStage.SEARCH,
@@ -141,7 +142,7 @@ export class FineractClient implements IFineractClient{
                     };
                 }
                 if(getAccountRes.statusCode == 200){
-                    stage = FineractLookupStage.CLIENT;
+                    stage = FineractLookupStage.CLIENT; // todo: where do you use it?
                     const currency = getAccountRes.data.currency.code;
                     if(getAccountRes.data.status.active){
                         const getClientRes = await this.getClient(getAccountRes.data.clientId);
@@ -171,7 +172,7 @@ export class FineractClient implements IFineractClient{
                         }else{
                             this.logger.error(`StatusCode not 200 for get ${ROUTES.clients}. Returned ${getClientRes.statusCode}`);
                             return {
-                                data: undefined, 
+                                data: undefined,
                                 message: `StatusCode not 200 for get ${ROUTES.clients}. Returned ${getClientRes.statusCode}`,
                                 status: getClientRes.statusCode,
                                 stage: FineractLookupStage.CLIENT,
@@ -181,7 +182,7 @@ export class FineractClient implements IFineractClient{
                     }else{
                         this.logger.error(`Account with Acc No ${getAccountRes.data.accountNo} not active`);
                         return {
-                            data: undefined, 
+                            data: undefined,
                             message: `Account with Acc No ${getAccountRes.data.accountNo} not active`,
                             status: getAccountRes.statusCode,
                             stage: FineractLookupStage.SAVINGSACCOUNT,
@@ -191,18 +192,18 @@ export class FineractClient implements IFineractClient{
                 }else{
                     this.logger.error(`StatusCode not 200 for get ${ROUTES.savingsAccount}. Returned ${getAccountRes.statusCode}`);
                     return {
-                        data: undefined, 
+                        data: undefined,
                         message: `StatusCode not 200 for get ${ROUTES.savingsAccount}. Returned ${getAccountRes.statusCode}`,
                         status: getAccountRes.statusCode,
                         stage: FineractLookupStage.SAVINGSACCOUNT,
                         accountStatus: false
                     };
                 }
-                
+
             }else{
                 this.logger.error(`StatusCode not 200 or is empty for ${ROUTES.search}. Returned ${res.statusCode}`);
                 return {
-                    data: undefined, 
+                    data: undefined,
                     message: `StatusCode not 200 or is empty for ${ROUTES.search}. Returned ${res.statusCode}`,
                     status: res.statusCode,
                     stage: FineractLookupStage.SEARCH,
@@ -210,11 +211,13 @@ export class FineractClient implements IFineractClient{
                 };
             }
         } catch (error) {
-            this.logger.error((error as Error).message);
+            const { message, stack } = error as Error;
+            // todo: always add your own log message
+            this.logger.error(`error on lookupPartyInfo: ${message}`, { stack });
             return {
-                data: undefined, 
-                message: (error as Error).message, 
-                status: 0, 
+                data: undefined,
+                message: (error as Error).message,
+                status: 0, // todo: what does it mean - status: 0?
                 stage: stage,
                 accountStatus: false
             };

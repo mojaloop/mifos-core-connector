@@ -28,21 +28,21 @@
  "use strict";
 
 import { randomUUID } from "crypto";
-import { 
-    FineractLookupStage, 
-    IFineractClient, 
-    IdType, 
-    PartyType, 
+import {
+    FineractLookupStage,
+    IFineractClient,
+    IdType,
+    PartyType,
     TFineractConfig,
     TFineractTransactionPayload
  } from "./FineractClient/types";
-import { 
-    ILogger, 
-    TLookupPartyInfoResponse, 
-    TQuoteResponse, 
-    TQuoteRequest, 
-    TtransferResponse, 
-    TtransferRequest 
+import {
+    ILogger,
+    TLookupPartyInfoResponse,
+    TQuoteResponse,
+    TQuoteRequest,
+    TtransferResponse,
+    TtransferRequest
 } from "./interfaces";
 
 export class CoreConnectorAggregate{
@@ -66,13 +66,15 @@ export class CoreConnectorAggregate{
 
         // Call Fineract to lookup account
         const lookupRes = await this.fineractClient.lookupPartyInfo(accountNo);
-        
+
         if(!lookupRes || !lookupRes.data){
+            this.logger.warn(`no lookupPartyInfo by accountNo`, { accountNo });
             return;
         }
 
         if(lookupRes.stage == FineractLookupStage.CLIENT && lookupRes.status == 200 && lookupRes.currency != null){
-            const party = {
+          // todo: move to DTO
+          const party = {
                 data : {
                     displayName: lookupRes.data.displayName,
                     firstName: lookupRes.data.firstname,
@@ -85,7 +87,7 @@ export class CoreConnectorAggregate{
                 },
                 statusCode: lookupRes.status
             };
-            this.logger.info(`Party found \n${JSON.stringify(party)}`);
+            this.logger.info(`Party found`, { party });
             return party;
         }else{
             return;
@@ -103,8 +105,10 @@ export class CoreConnectorAggregate{
         const quoteRes = await this.fineractClient.calculateQuote({accountNo:accountNo});
 
         if(!quoteRes || !quoteRes.accountStatus){
+          // todo: add log here
             return;
         }else{
+          // todo: move mapping logic to DTO
             const quoteResponse: TQuoteResponse = {
                 expiration: new Date().toJSON(),
                 payeeFspCommissionAmount: "0",
@@ -155,13 +159,13 @@ export class CoreConnectorAggregate{
         const transferResponse : TtransferResponse = {
             completedTimestamp : new Date().toJSON(),
             homeTransactionId: transfer.transferId,
-            transferState: "COMMITTED"  
+            transferState: "COMMITTED"
         };
         return transferResponse;
     }
 
     extractAccountFromIBAN(IBAN:string): string{
-        // todo think how to validate account numbers 
+        // todo think how to validate account numbers
         const accountNo = IBAN.slice(
             this.fineractConfig.FINERACT_BANK_COUNTRY_CODE.length+
             this.fineractConfig.FINERACT_CHECK_DIGITS.length+

@@ -31,6 +31,7 @@ import axios, { AxiosHeaders } from "axios";
 import { THttpResponse,TRequestOptions } from "../../domain";
 import { IHttpClient } from "../../domain";
 
+// todo: it's better to use more generic name: HttpClient
  export class AxiosHttpClient implements IHttpClient{
      async send<R = unknown>(url: string, options: TRequestOptions): Promise<THttpResponse<R> | undefined> {
         const method  = options.method;
@@ -50,6 +51,7 @@ import { IHttpClient } from "../../domain";
         } catch (error) {
             console.error(error); // todo. Replace with a proper logger
             return;
+            // todo: I'd suggest rethrowing the error from the httpClient, and allow code, which uses it to handle it as needed
         }
      }
 

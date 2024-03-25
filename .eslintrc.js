@@ -1,3 +1,4 @@
+// todo: maybe, let's use this file from PTA?
 module.exports = {
     "extends": [
     "eslint:recommended",

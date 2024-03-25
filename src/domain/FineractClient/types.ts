@@ -13,12 +13,13 @@ export enum IdType {
 }
 
 export enum PartyType {
-    CONSUMER = "CONSUMER", 
-    AGENT = "AGENT", 
-    BUSINESS = "BUSINESS", 
+    CONSUMER = "CONSUMER",
+    AGENT = "AGENT",
+    BUSINESS = "BUSINESS",
     DEVICE = "DEVICE",
 }
 
+// maybe, we can remove prefix FINERACT_ from all fileds?
 export type TFineractConfig = {
     FINERACT_BASE_URL: string,
     FINERACT_TENTANT_ID: string,
@@ -34,7 +35,7 @@ export type TFineractConfig = {
 }
 
 export type Payee = {
-    full_name: string
+    full_name: string // todo: try to avoid using camelCase and snake_case across code
 }
 
 export enum FineractLookupStage {
@@ -83,6 +84,7 @@ export type TFineractAccountStatus = {
     matured: boolean;
 }
 
+// todo: are all fields required?
 export type TFineractGetAccountResponse = {
     id: string;
     accountNo: string;
@@ -215,7 +217,7 @@ export type TCalculateQuoteDeps = {
 
  export type TFineracttransferDeps = {
     accountId: number
-    transaction: TFineractTransactionPayload 
+    transaction: TFineractTransactionPayload
  }
 
  export type TFineractTransactionResponse = {
