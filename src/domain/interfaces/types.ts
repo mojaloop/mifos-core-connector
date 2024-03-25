@@ -55,7 +55,7 @@ export type Payee = {
    displayName: string;
    extensionList?: unknown[];
    firstName: string;
-   fspId: string;
+   fspId?: string;
    idSubValue?: string;
    idType: string;
    idValue: string;

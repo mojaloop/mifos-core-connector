@@ -76,7 +76,6 @@ export class CoreConnectorAggregate{
                 data : {
                     displayName: lookupRes.data.displayName,
                     firstName: lookupRes.data.firstname,
-                    fspId: this.fineractConfig.FINERACT_BANK_ID,
                     idType: IdType.IBAN,
                     idValue: accountNo,
                     lastName: lookupRes.data.lastname,
