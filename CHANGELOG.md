@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.8](https://github.com/mojaloop/mifos-core-connector/compare/v0.0.7...v0.0.8) (2024-03-25)
+
+
+### Features
+
+* make fspId, DateOfBirth and extensionList optional in get parties response ([2ea3f84](https://github.com/mojaloop/mifos-core-connector/commit/2ea3f841ea0691092ada39e6443cfea474732283))
+
+
+### Bug Fixes
+
+* removed extension list from Get parties response ([ca7c228](https://github.com/mojaloop/mifos-core-connector/commit/ca7c228dba7419a6fd009dc32c9c69185236647b))
+
 ### [0.0.7](https://github.com/mojaloop/mifos-core-connector/compare/v0.0.6...v0.0.7) (2024-03-25)
 
 
