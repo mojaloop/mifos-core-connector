@@ -74,14 +74,7 @@ export class CoreConnectorAggregate{
         if(lookupRes.stage == FineractLookupStage.CLIENT && lookupRes.status == 200 && lookupRes.currency != null){
             const party = {
                 data : {
-                    dateOfBirth: "",
                     displayName: lookupRes.data.displayName,
-                    extensionList: [
-                        {
-                            key: "",
-                            value: ""
-                        }
-                    ],
                     firstName: lookupRes.data.firstname,
                     fspId: this.fineractConfig.FINERACT_BANK_ID,
                     idSubValue: "",
