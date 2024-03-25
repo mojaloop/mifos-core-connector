@@ -51,11 +51,11 @@ export type TQuoteResponse = SDKSchemeAdapter.V2_0_0.Backend.Types.quoteResponse
 export type TtransferResponse = SDKSchemeAdapter.V2_0_0.Backend.Types.transferResponse;
 
 export type Payee = {
-   dateOfBirth: string;
+   dateOfBirth?: string;
    displayName: string;
-   extensionList: unknown[];
+   extensionList?: unknown[];
    firstName: string;
-   fspId: string;
+   fspId?: string;
    idSubValue?: string;
    idType: string;
    idValue: string;
