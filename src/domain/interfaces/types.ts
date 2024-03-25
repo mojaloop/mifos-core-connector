@@ -41,7 +41,7 @@ export type TtransferRequest = SDKSchemeAdapter.V2_0_0.Backend.Types.transferReq
 
  export type TRequestOptions = {
     payload?:unknown | undefined;
-    timeout_ms?:number; 
+    timeout_ms?:number;
     method?: string;
     headers?: unknown | undefined;
  }
@@ -56,14 +56,14 @@ export type Payee = {
    extensionList?: unknown[];
    firstName: string;
    fspId: string;
-   idSubValue: string;
+   idSubValue?: string;
    idType: string;
    idValue: string;
    lastName: string;
    merchantClassificationCode: string;
    middleName: string;
    type: string;
-   supportedCurrencies: string;
+   supportedCurrencies?: string;
    kycInformation: string;
 };
 

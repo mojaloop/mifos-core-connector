@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.7](https://github.com/mojaloop/mifos-core-connector/compare/v0.0.6...v0.0.7) (2024-03-25)
+
+
+### Bug Fixes
+
+* made some fields optional ([1a7c2bf](https://github.com/mojaloop/mifos-core-connector/commit/1a7c2bf26582c45e5a54cb78cdd524f4b5af5cb0))
+
+### [0.0.6](https://github.com/mojaloop/mifos-core-connector/compare/v0.0.5...v0.0.6) (2024-03-25)
+
+
+### Bug Fixes
+
+* removed supported currencies and idsubvalue in response ([d943f0d](https://github.com/mojaloop/mifos-core-connector/commit/d943f0d6976e73f55a02c68d1165c1389531ed0d))
+
+### [0.0.5](https://github.com/mojaloop/mifos-core-connector/compare/v0.0.4...v0.0.5) (2024-03-25)
+
 ### [0.0.4](https://github.com/mojaloop/mifos-core-connector/compare/v0.0.3...v0.0.4) (2024-03-22)
 
 
