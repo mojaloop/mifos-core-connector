@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.10](https://github.com/mojaloop/mifos-core-connector/compare/v0.0.9...v0.0.10) (2024-03-25)
+
+
+### Bug Fixes
+
+* removed undefined optional fields from response bodies in quotes and transfers ([cd523e4](https://github.com/mojaloop/mifos-core-connector/commit/cd523e4bb2c8c2ad18f749f32e68dbb3683efb15))
+
 ### [0.0.9](https://github.com/mojaloop/mifos-core-connector/compare/v0.0.8...v0.0.9) (2024-03-25)
 
 
