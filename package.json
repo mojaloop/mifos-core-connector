@@ -1,6 +1,6 @@
 {
   "name": "@mojaloop/mifos-core-connector",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "A connector that facilitates payments between a Mojaloop Connector (SDK Scheme Adapter) and a Core Banking system",
   "main": "dist/index.js",
   "scripts": {
