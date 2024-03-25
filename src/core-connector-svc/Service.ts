@@ -27,7 +27,7 @@ optionally within square brackets <email>.
 
 "use strict";
 
-import { Server, ServerOptions } from "@hapi/hapi";
+import { Server } from "@hapi/hapi";
 import { IHttpClient } from "../domain";
 import { CoreConnectorAggregate } from "../domain";
 import { FineractClient } from "../domain/FineractClient/FineractClient";

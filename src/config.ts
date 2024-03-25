@@ -71,6 +71,12 @@ const config = Convict<IConfigSchema>({
             format: String,
             default: IdType.IBAN,
         },
+        FINERACT_LOCALE: {
+            doc: 'FINERACT_LOCALE', // todo: add proper description
+            format: String,
+            default: null, // required
+            env: 'FINERACT_LOCALE',
+        },
     },
     server: {
         host: {
