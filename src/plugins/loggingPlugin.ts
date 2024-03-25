@@ -22,7 +22,7 @@ export const loggingPlugin: Plugin<LoggingPluginOptions> = {
                     id, remoteAddress, path, method, received,
                 };
                 Object.assign(req.app, { context });
-                logger.info(`[--> req] ${method.toUpperCase()} ${path}`, context);
+                logger.info(`[==> req] ${method.toUpperCase()} ${path}`, context);
 
                 return h.continue;
             },
@@ -38,7 +38,7 @@ export const loggingPlugin: Plugin<LoggingPluginOptions> = {
                 const statusCode = response instanceof Error
                     ? response.output.statusCode
                     : response.statusCode;
-                logger.info(`[<-- ${statusCode}][${responseTimeSec} s] ${method.toUpperCase()} ${path}`, context);
+                logger.info(`[<== ${statusCode}][${responseTimeSec} s] ${method.toUpperCase()} ${path}`, context);
 
                 return h.continue;
             },
