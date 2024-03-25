@@ -49,7 +49,7 @@ const coreConnectorAggregate = new CoreConnectorAggregate(
     logger
 );
 
-const IBAN = "SK680720000289000000001";
+const IBAN = "UG680720000289000000001";
 
 jest.setTimeout(50000);
 
