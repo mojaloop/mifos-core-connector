@@ -79,7 +79,6 @@ export class CoreConnectorAggregate{
                     idType: IdType.IBAN,
                     idValue: accountNo,
                     lastName: lookupRes.data.lastname,
-                    merchantClassificationCode: "",
                     middleName: lookupRes.data.firstname,
                     type: PartyType.CONSUMER,
                     kycInformation: `${JSON.stringify(lookupRes.data)}`,

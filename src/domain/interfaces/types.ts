@@ -60,7 +60,7 @@ export type Payee = {
    idType: string;
    idValue: string;
    lastName: string;
-   merchantClassificationCode: string;
+   merchantClassificationCode?: string;
    middleName: string;
    type: string;
    supportedCurrencies?: string;
