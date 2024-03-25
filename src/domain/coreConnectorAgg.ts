@@ -106,17 +106,7 @@ export class CoreConnectorAggregate{
             return;
         }else{
             const quoteResponse: TQuoteResponse = {
-                expiration: "3092-12-31T23:17:34.658-06:45",
-                extensionList: [
-                  {
-                    "key": "string",
-                    "value": "string"
-                  }
-                ],
-                geoCode: {
-                  latitude: "34",
-                  longitude: "-140"
-                },
+                expiration: new Date().toJSON(),
                 payeeFspCommissionAmount: "0",
                 payeeFspCommissionAmountCurrency: quoterequest.currency,
                 payeeFspFeeAmount: "0",
@@ -164,7 +154,6 @@ export class CoreConnectorAggregate{
         }
         const transferResponse : TtransferResponse = {
             completedTimestamp : new Date().toJSON(),
-            fulfilment: undefined,
             homeTransactionId: transfer.transferId,
             transferState: "COMMITTED"  
         };
