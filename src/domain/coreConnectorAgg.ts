@@ -64,6 +64,10 @@ export class CoreConnectorAggregate{
         // extract Account No from IBAN
         const accountNo = this.extractAccountFromIBAN(IBAN);
 
+        if(accountNo.length < 1){
+            return;
+        }
+
         // Call Fineract to lookup account
         const lookupRes = await this.fineractClient.lookupPartyInfo(accountNo);
         
@@ -99,6 +103,9 @@ export class CoreConnectorAggregate{
         }
         this.logger.info(`Get Parties for ${this.IdType} ${quoterequest.to.idValue}`);
         const accountNo = this.extractAccountFromIBAN(quoterequest.to.idValue);
+        if(accountNo.length < 1){
+            return;
+        }
 
         const quoteRes = await this.fineractClient.calculateQuote({accountNo:accountNo});
 
@@ -128,6 +135,9 @@ export class CoreConnectorAggregate{
         }
         this.logger.info(`Transfer for  ${this.IdType} ${transfer.to.idValue}`);
         const accountNo = this.extractAccountFromIBAN(transfer.to.idValue);
+        if(accountNo.length < 1){
+            return;
+        }
 
         const res = await this.fineractClient.getAccountFineractIdWithAccountNo(accountNo);
         if(!res || res.accountId == null){

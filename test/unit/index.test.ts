@@ -59,6 +59,11 @@ jest.setTimeout(50000);
         expect(res?.statusCode).toEqual(200);
     });
 
+    test("Aggregate Get Parties with short IBAN. Should return status code not equal to 200 because IBAN is too short",async ()=>{
+      const res = await coreConnectorAggregate.getParties("UG680720000289");
+      expect(res?.statusCode).not.toEqual(200);
+  });
+
     test("Aggregate Qoute Request. Should return if account is active ", async ()=>{
         const quoteRequest : TQuoteRequest= {
             "homeR2PTransactionId": "string",
