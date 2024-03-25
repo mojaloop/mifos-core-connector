@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.9](https://github.com/mojaloop/mifos-core-connector/compare/v0.0.8...v0.0.9) (2024-03-25)
+
+
+### Bug Fixes
+
+* make merchantClassificationCode optional in get parties response ([a1349e0](https://github.com/mojaloop/mifos-core-connector/commit/a1349e0b8b59ac26c0d9a11ce464d4c10966d5a2))
+
 ### [0.0.8](https://github.com/mojaloop/mifos-core-connector/compare/v0.0.7...v0.0.8) (2024-03-25)
 
 
