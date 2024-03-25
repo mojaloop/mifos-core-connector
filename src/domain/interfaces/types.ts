@@ -32,6 +32,8 @@ import {SDKSchemeAdapter} from "@mojaloop/api-snippets";
 
 export type TQuoteRequest = SDKSchemeAdapter.V2_0_0.Backend.Types.quoteRequest;
 
+export type TtransferRequest = SDKSchemeAdapter.V2_0_0.Backend.Types.transferRequest;
+
  export type THttpResponse<R> = {
     data: R
     statusCode: number
@@ -39,27 +41,29 @@ export type TQuoteRequest = SDKSchemeAdapter.V2_0_0.Backend.Types.quoteRequest;
 
  export type TRequestOptions = {
     payload?:unknown | undefined;
-    timeout_ms?:number; 
+    timeout_ms?:number;
     method?: string;
     headers?: unknown | undefined;
  }
 
 export type TQuoteResponse = SDKSchemeAdapter.V2_0_0.Backend.Types.quoteResponse;
 
+export type TtransferResponse = SDKSchemeAdapter.V2_0_0.Backend.Types.transferResponse;
+
 export type Payee = {
-   dateOfBirth: string;
+   dateOfBirth?: string;
    displayName: string;
-   extensionList: unknown[];
+   extensionList?: unknown[];
    firstName: string;
-   fspId: string;
-   idSubValue: string;
+   fspId?: string;
+   idSubValue?: string;
    idType: string;
    idValue: string;
    lastName: string;
    merchantClassificationCode: string;
    middleName: string;
    type: string;
-   supportedCurrencies: string;
+   supportedCurrencies?: string;
    kycInformation: string;
 };
 

@@ -31,6 +31,7 @@ export type TFineractConfig = {
     FINERACT_BANK_COUNTRY_CODE: string,
     FINERACT_CHECK_DIGITS: string,
     FINERACT_ID_TYPE: IdType,
+    FINERACT_LOCALE: string,
 }
 
 export type Payee = {
@@ -48,7 +49,9 @@ export type TLookupResponseInfo = {
    message: string;
    status: number;
    stage: FineractLookupStage;
-   currency?: string
+   currency?: string;
+   accountId?: number;
+   accountStatus?: boolean
 }
 
 export type TAccountEntity = {
@@ -184,6 +187,8 @@ export interface IFineractClient {
     logger: ILogger
     lookupPartyInfo(accountNo: string):Promise<TLookupResponseInfo | undefined>;
     calculateQuote(quoteDeps: TCalculateQuoteDeps): Promise<TCalculateQuoteResponse | undefined>;
+    transfer(transferDeps: TFineracttransferDeps): Promise<TFineractTransactionResponse | undefined>;
+    getAccountFineractIdWithAccountNo(accountNo: string): Promise<TLookupResponseInfo | undefined>;
 }
 
 export type TFineractClientFactoryDeps = {
@@ -196,7 +201,34 @@ export type TCalculateQuoteDeps = {
     accountNo: string
  }
 
- export type TCalculateQuoteResponse = {
-    accountStatus : boolean
-    stage: string
+ export type TCalculateQuoteResponse = TLookupResponseInfo
+
+ export type TFineractTransactionPayload  = {
+    locale: string,
+    dateFormat: string,
+    transactionDate: string,
+    transactionAmount: string,
+    paymentTypeId: string,
+    accountNumber: string,
+    routingCode: string,
+    receiptNumber: string,
+    bankNumber: string
+  }
+
+ export type TFineracttransferDeps = {
+    accountId: number
+    transaction: TFineractTransactionPayload
  }
+
+ export type TFineractTransactionResponse = {
+    officeId: number,
+    clientId: number,
+    savingsId: number,
+    resourceId: number,
+    changes: {
+        accountNumber: string,
+        routingCode: string,
+        receiptNumber: string,
+        bankNumber: string
+    }
+}

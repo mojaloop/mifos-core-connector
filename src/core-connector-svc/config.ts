@@ -44,6 +44,7 @@ config(); // todo: we don't need it in production
         FINERACT_ACCOUNT_PREFIX: process.env["FINERACT_ACCOUNT_PREFIX"] != null ? process.env["FINERACT_ACCOUNT_PREFIX"]: "",
         FINERACT_BANK_COUNTRY_CODE: process.env["FINERACT_BANK_COUNTRY_CODE"] != null ? process.env["FINERACT_BANK_COUNTRY_CODE"]: null,
         FINERACT_CHECK_DIGITS: process.env["FINERACT_CHECK_DIGITS"] != null ? process.env["FINERACT_CHECK_DIGITS"]: null,
+        FINERACT_LOCALE: process.env["FINERACT_LOCALE"] != null ? process.env["FINERACT_LOCALE"] : "en",
         FINERACT_ID_TYPE: IdType.IBAN
     },
     server: {

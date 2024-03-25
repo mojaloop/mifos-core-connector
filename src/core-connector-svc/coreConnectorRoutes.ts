@@ -29,7 +29,7 @@ optionally within square brackets <email>.
 
 import { Request, ResponseToolkit, ServerRoute } from "@hapi/hapi";
 import { CoreConnectorAggregate } from "src/domain/coreConnectorAgg";
-import { ILogger, IRoutes, TQuoteRequest } from "src/domain/interfaces";
+import { ILogger, IRoutes, TQuoteRequest, TtransferRequest } from "src/domain/interfaces";
 
 export class CoreConnectorRoutes implements IRoutes{
     private readonly aggregate: CoreConnectorAggregate;
@@ -51,8 +51,13 @@ export class CoreConnectorRoutes implements IRoutes{
            path: `/quoterequests`,
            handler: this.quoteRequests.bind(this)
         });
-    }
 
+        this.routes.push({
+            method: ["POST"],
+            path: `/transfers`,
+            handler: this.transfer.bind(this)
+        });
+    }
     getRoutes(): ServerRoute[] {
         return this.routes;
     }
@@ -61,9 +66,7 @@ export class CoreConnectorRoutes implements IRoutes{
         // this.logger.info("Received GET request /parties/{IdType}/{ID}");
         // we don't need this - loggingPlugin will log such info for any incoming requests
         const IBAN = request.params["ID"];
-
         const result = await this.aggregate.getParties(IBAN);
-
         if(!result){
             return h.response({"statusCode":"3204", "message":"Party not found"}).code(404);
         }else{
@@ -72,16 +75,25 @@ export class CoreConnectorRoutes implements IRoutes{
     }
 
     private async quoteRequests(request: Request, h:ResponseToolkit){
-        this.logger.info("Raeceived POST request /quoterequests");
+        this.logger.info("Received POST request /quoterequests");
         const quote = request.payload as TQuoteRequest;
-
         const result = await this.aggregate.quoterequest(quote);
-
         if(!result){
             return h.response({"statusCode":"3204", "message":"Party not found"}).code(404);
             // todo: should the message here be "Party not found"? (maybe, quote?)
         }else{
             return h.response(result).code(200);
+        }
+    }
+
+    private async transfer(request: Request, h: ResponseToolkit){
+        this.logger.info("Received POST request /transfers");
+        const transfer = request.payload as TtransferRequest;
+        const result = await this.aggregate.transfer(transfer);
+        if(!result){
+            return h.response({"statusCode":"5000", "message":"Generic Payee error"}).code(500);
+        }else{
+            return h.response(result).code(201);
         }
     }
 }
