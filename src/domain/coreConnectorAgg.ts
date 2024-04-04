@@ -64,6 +64,10 @@ export class CoreConnectorAggregate{
         // extract Account No from IBAN
         const accountNo = this.extractAccountFromIBAN(IBAN);
 
+        if(accountNo.length < 1){
+            return;
+        }
+
         // Call Fineract to lookup account
         const lookupRes = await this.fineractClient.lookupPartyInfo(accountNo);
 
@@ -81,7 +85,6 @@ export class CoreConnectorAggregate{
                     idType: IdType.IBAN,
                     idValue: accountNo,
                     lastName: lookupRes.data.lastname,
-                    merchantClassificationCode: "",
                     middleName: lookupRes.data.firstname,
                     type: PartyType.CONSUMER,
                     kycInformation: `${JSON.stringify(lookupRes.data)}`,
@@ -102,6 +105,9 @@ export class CoreConnectorAggregate{
         }
         this.logger.info(`Get Parties for ${this.IdType} ${quoterequest.to.idValue}`);
         const accountNo = this.extractAccountFromIBAN(quoterequest.to.idValue);
+        if(accountNo.length < 1){
+            return;
+        }
 
         const quoteRes = await this.fineractClient.calculateQuote({accountNo:accountNo});
 
@@ -111,17 +117,7 @@ export class CoreConnectorAggregate{
         }else{
           // todo: move mapping logic to DTO
             const quoteResponse: TQuoteResponse = {
-                expiration: "3092-12-31T23:17:34.658-06:45",
-                extensionList: [
-                  {
-                    "key": "string",
-                    "value": "string"
-                  }
-                ],
-                geoCode: {
-                  latitude: "34",
-                  longitude: "-140"
-                },
+                expiration: new Date().toJSON(),
                 payeeFspCommissionAmount: "0",
                 payeeFspCommissionAmountCurrency: quoterequest.currency,
                 payeeFspFeeAmount: "0",
@@ -143,6 +139,9 @@ export class CoreConnectorAggregate{
         }
         this.logger.info(`Transfer for  ${this.IdType} ${transfer.to.idValue}`);
         const accountNo = this.extractAccountFromIBAN(transfer.to.idValue);
+        if(accountNo.length < 1){
+            return;
+        }
 
         const res = await this.fineractClient.getAccountFineractIdWithAccountNo(accountNo);
         if(!res || res.accountId == null){
@@ -169,7 +168,6 @@ export class CoreConnectorAggregate{
         }
         const transferResponse : TtransferResponse = {
             completedTimestamp : new Date().toJSON(),
-            fulfilment: undefined,
             homeTransactionId: transfer.transferId,
             transferState: "COMMITTED"
         };

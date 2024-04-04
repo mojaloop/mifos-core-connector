@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.12](https://github.com/mojaloop/mifos-core-connector/compare/v0.0.11...v0.0.12) (2024-03-25)
+
+
+### Bug Fixes
+
+* validate account returned from IBAN to have length > 1 ([122eb88](https://github.com/mojaloop/mifos-core-connector/commit/122eb88515108aad3f34b9fd91016ea132920f02))
+
+### [0.0.11](https://github.com/mojaloop/mifos-core-connector/compare/v0.0.10...v0.0.11) (2024-03-25)
+
+### [0.0.10](https://github.com/mojaloop/mifos-core-connector/compare/v0.0.9...v0.0.10) (2024-03-25)
+
+
+### Bug Fixes
+
+* removed undefined optional fields from response bodies in quotes and transfers ([cd523e4](https://github.com/mojaloop/mifos-core-connector/commit/cd523e4bb2c8c2ad18f749f32e68dbb3683efb15))
+
+### [0.0.9](https://github.com/mojaloop/mifos-core-connector/compare/v0.0.8...v0.0.9) (2024-03-25)
+
+
+### Bug Fixes
+
+* make merchantClassificationCode optional in get parties response ([a1349e0](https://github.com/mojaloop/mifos-core-connector/commit/a1349e0b8b59ac26c0d9a11ce464d4c10966d5a2))
+
 ### [0.0.8](https://github.com/mojaloop/mifos-core-connector/compare/v0.0.7...v0.0.8) (2024-03-25)
 
 
