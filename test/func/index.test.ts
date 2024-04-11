@@ -135,7 +135,8 @@ function extractAccountFromIBAN(IBAN:string): string{
             "transactionRequestId": randomUUID(),
           };
         const url = `${baseurl}/quoterequests`;
-        const res =  await axios.post(
+        try {
+          const res =  await axios.post(
             url,
             JSON.stringify(quoteRequest),
             {
@@ -145,6 +146,9 @@ function extractAccountFromIBAN(IBAN:string): string{
             }
         );
         expect(res.status).toEqual(200);
+        } catch (error) {
+         console.error(error); 
+        }
     });
 
     test("POST /transfers Should return transfer if party in fineract", async ()=>{

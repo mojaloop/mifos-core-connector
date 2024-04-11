@@ -28,8 +28,11 @@ optionally within square brackets <email>.
 "use strict";
 
 import { Request, ResponseToolkit, ServerRoute } from "@hapi/hapi";
+import OpenAPIBackend, { Context } from "openapi-backend";
 import { CoreConnectorAggregate } from "src/domain/coreConnectorAgg";
 import { ILogger, IRoutes, TQuoteRequest, TtransferRequest } from "src/domain/interfaces";
+
+const API_SPEC_FILE = './src/api-spec/core-connector-api-spec.-sdk.yml';
 
 export class CoreConnectorRoutes implements IRoutes{
     private readonly aggregate: CoreConnectorAggregate;
@@ -38,34 +41,50 @@ export class CoreConnectorRoutes implements IRoutes{
 
     constructor(aggregate: CoreConnectorAggregate, logger: ILogger){
         this.aggregate = aggregate;
-        this.logger = logger.child({context:"MCC Core Connector Routes"});
+        this.logger = logger.child({context:"MCC Routes"});
+
+        // initialise openapi backend with validation
+        const api = new OpenAPIBackend({
+            definition: API_SPEC_FILE,
+            handlers: {
+                getParties: this.getParties.bind(this),
+                quoteRequests: this.quoteRequests.bind(this),
+                transfers: this.transfers.bind(this),
+                validationFail: async (context, req, h) => h.response({ error: context.validation.errors }).code(400),
+                notFound: async (context, req, h) => h.response({ error: 'Not found' }).code(404),
+            },
+        });
+
+        api.init(); // todo: remove async method from ctor
 
         this.routes.push({
-            method: ["GET"],
-            path: `/parties/${this.aggregate.IdType.toString()}/{ID}`,
-            handler: this.getParties.bind(this)
+            method: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+            path: '/{path*}',
+            handler: (req: Request, h: ResponseToolkit) => api.handleRequest({
+                method: req.method,
+                path: req.path,
+                body: req.payload,
+                query: req.query,
+                headers: req.headers,
+            }, req, h),
         });
 
         this.routes.push({
-           method: ["POST"],
-           path: `/quoterequests`,
-           handler: this.quoteRequests.bind(this)
-        });
-
-        this.routes.push({
-            method: ["POST"],
-            path: `/transfers`,
-            handler: this.transfer.bind(this)
+            method: ['GET'],
+            path: '/health',
+            handler: async (req: Request, h: ResponseToolkit) => {
+                const success = true; // todo: think about better healthCheck logic
+                return h.response({ success }).code(success ? 200 : 503);
+            }
         });
     }
     getRoutes(): ServerRoute[] {
         return this.routes;
     }
 
-    private async getParties(request: Request, h: ResponseToolkit){ //todo change to openapi signature
-        // this.logger.info("Received GET request /parties/{IdType}/{ID}");
-        // we don't need this - loggingPlugin will log such info for any incoming requests
-        const IBAN = request.params["ID"];
+    private async getParties(context: Context, request: Request, h: ResponseToolkit){
+        const {params} = context.request;
+        const IBAN = params["ID"] as string;
         const result = await this.aggregate.getParties(IBAN);
         if(!result){
             return h.response({"statusCode":"3204", "message":"Party not found"}).code(404);
@@ -74,20 +93,17 @@ export class CoreConnectorRoutes implements IRoutes{
         }
     }
 
-    private async quoteRequests(request: Request, h:ResponseToolkit){
-        this.logger.info("Received POST request /quoterequests");
+    private async quoteRequests(context: Context, request: Request, h:ResponseToolkit){
         const quote = request.payload as TQuoteRequest;
         const result = await this.aggregate.quoterequest(quote);
         if(!result){
-            return h.response({"statusCode":"3204", "message":"Party not found"}).code(404);
-            // todo: should the message here be "Party not found"? (maybe, quote?)
+            return h.response({"statusCode":"3204", "message":"Quote not found"}).code(404);
         }else{
             return h.response(result).code(200);
         }
     }
 
-    private async transfer(request: Request, h: ResponseToolkit){
-        this.logger.info("Received POST request /transfers");
+    private async transfers(context: Context, request: Request, h: ResponseToolkit){
         const transfer = request.payload as TtransferRequest;
         const result = await this.aggregate.transfer(transfer);
         if(!result){

@@ -147,11 +147,11 @@ export class CoreConnectorAggregate{
         if(!res || res.accountId == null){
             return;
         }
-        // const date = new Date();
+        const date = new Date();
         const transaction : TFineractTransactionPayload = {
             locale: this.fineractConfig.FINERACT_LOCALE,
             dateFormat: this.DATE_FORMAT,
-            transactionDate: `11 3 24`, //`${date.getDate()} ${date.getMonth()} ${date.getFullYear()}`,
+            transactionDate: `${date.getDate()} ${date.getMonth()} ${date.getFullYear()}`,
             transactionAmount: transfer.amount,
             paymentTypeId: "1",
             accountNumber: accountNo,
