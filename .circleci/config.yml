@@ -192,7 +192,7 @@ jobs:
             nvm use
             npm install
       - run:
-          name: Execute Unit Tests
+          name: Execute Functional Tests
           command: npm run test:functional
       - run:
           name: Stop docker-compose TTK backend
