@@ -186,7 +186,8 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            cp .env.example .env
+            cp .env.example .env.sh
+            source .env.sh
             nvm install
             nvm use
             npm install
