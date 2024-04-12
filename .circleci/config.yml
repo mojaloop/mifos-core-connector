@@ -188,13 +188,14 @@ jobs:
           command: |
             cp env.sh.example env.sh
             chmod +x env.sh
-            source env.sh
             nvm install
             nvm use
             npm install
       - run:
           name: Execute Functional Tests
-          command: npm run test:functional
+          command: |
+            source env.sh
+            npm run test:functional
       - run:
           name: Stop docker-compose TTK backend
           command: |
