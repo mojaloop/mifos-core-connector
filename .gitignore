@@ -131,6 +131,7 @@ dist
 
 # IDE
 .idea/
+.vscode
 
 
 #MAC
@@ -138,3 +139,4 @@ dist
 
 #Environment Variables
 .env
+env.sh

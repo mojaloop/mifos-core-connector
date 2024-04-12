@@ -30,14 +30,14 @@ optionally within square brackets <email>.
 import { Server } from "@hapi/hapi";
 import { IHttpClient } from "../domain";
 import { CoreConnectorAggregate } from "../domain";
-import { FineractClient } from "../domain/FineractClient/FineractClient";
 import { AxiosClientFactory } from "../infra/axiosHttpClient";
-import { TFineractConfig } from "../domain/FineractClient/types";
-import { CONFIG } from "./config";
+import config from "../config";
 import { CoreConnectorRoutes } from "./coreConnectorRoutes";
 import { loggerFactory } from "../infra/logger";
+import { createPlugins } from '../plugins';
+import { FineractClientFactory } from "../domain/FineractClient";
 
-const logger = loggerFactory({ context: 'Mifos Core Connector' });
+const logger = loggerFactory({ context: 'MifosCC' });
 
 export class Service {
     static coreConnectorAggregate: CoreConnectorAggregate;
@@ -49,21 +49,12 @@ export class Service {
             httpClient = AxiosClientFactory.createAxiosClientInstance();
         }
         this.httpClient = httpClient;
-        if(
-            !CONFIG.fineractConfig.FINERACT_ACCOUNT_PREFIX || 
-            !CONFIG.fineractConfig.FINERACT_AUTH_MODE ||
-            !CONFIG.fineractConfig.FINERACT_BANK_COUNTRY_CODE ||
-            !CONFIG.fineractConfig.FINERACT_BANK_ID ||
-            !CONFIG.fineractConfig.FINERACT_BASE_URL||
-            !CONFIG.fineractConfig.FINERACT_ID_TYPE ||
-            !CONFIG.fineractConfig.FINERACT_PASSWORD ||
-            !CONFIG.fineractConfig.FINERACT_TENTANT_ID ||
-            !CONFIG.fineractConfig.FINERACT_USERNAME
-            ){
-                throw new Error("Please set the environment variables as used in config.ts through a .env file. Refer to .env.example");
-            }
-        const fineractConfig = CONFIG.fineractConfig as TFineractConfig;
-        const fineractClient = new FineractClient(fineractConfig,this.httpClient, logger);
+        const fineractConfig = config.get("fineract");
+        const fineractClient = FineractClientFactory.createClient({
+            fineractConfig: fineractConfig,
+            httpClient: this.httpClient,
+            logger: logger
+        });
         this.coreConnectorAggregate = new CoreConnectorAggregate(fineractConfig,fineractClient,logger);
 
         await this.setupAndStartUpServer();
@@ -71,29 +62,13 @@ export class Service {
     }
 
     static async setupAndStartUpServer(){
-        return new Promise<void>((resolve)=>{
-            if(!CONFIG.server.PORT || !CONFIG.server.HOST){
-                throw new Error("Please set the environment variables as used in config.ts through a .env file. Refer to .env.example");
-            }
-            this.server = new Server({
-                port: CONFIG.server.PORT,
-                host: CONFIG.server.HOST,
-            });
+            this.server = new Server(config.get('server'));
+            await this.server.register(createPlugins({ logger }));
 
             const coreConnectorRoutes = new CoreConnectorRoutes(this.coreConnectorAggregate, logger);
             this.server.route(coreConnectorRoutes.getRoutes());
-            this.server.route({
-                method: '*',
-                path: '/{any*}',
-                handler: function (request, h) {
-                    return h.response('404 Error! Page Not Found!').code(404);
-                },
-            });
-            this.server.start();
+            await this.server.start();
             logger.info(`Core Connector Server running at ${this.server.info.uri}`);
-
-            resolve();
-        });
     }
 
     static async stop(){

@@ -186,13 +186,17 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            cp .env.example .env
+            cp env.sh.example env.sh
+            chmod +x env.sh
             nvm install
             nvm use
             npm install
       - run:
-          name: Execute Unit Tests
-          command: npm run test:functional
+          name: Execute Functional Tests
+          command: |
+            source env.sh
+            echo $FINERACT_BASE_URL || "NO VARIABLE SET"
+            npm run test:functional
       - run:
           name: Stop docker-compose TTK backend
           command: |

@@ -35,9 +35,10 @@ export type TJson =
   | boolean
   | { [x: string]: TJson }
   | Array<TJson>;
-  
+
 export interface IHttpClient{
     send<R = unknown>(url:string, options: TRequestOptions):Promise<THttpResponse<R> | undefined>;
+    // todo: do you plan to add a separate methods for GET, POST, PUT... etc?
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

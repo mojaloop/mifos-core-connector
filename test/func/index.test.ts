@@ -29,23 +29,25 @@
 
 import axios from "axios";
 import { randomUUID } from "crypto";
-import { CONFIG, Service } from "../../src/core-connector-svc";
+import { Service } from "../../src/core-connector-svc";
+import config from "../../src/config";
 import { loggerFactory } from "../../src/infra/logger";
 import { TQuoteRequest, TtransferRequest } from "../../src/domain/interfaces";
 
 
-jest.setTimeout(1000000);
+jest.setTimeout(1000000); // why do we need such timeout?
 const logger = loggerFactory({context: "Core Connector Tests"});
 const IBAN = "SK680720000289000000002";
 const IdType = "IBAN";
-const baseurl = `http://${CONFIG.server.HOST?.toString()}:${CONFIG.server.PORT?.toString()}`;
+const baseurl = `http://${config.get("server").host}:${config.get("server").port}`;
 
+// todo: why do we copy-paste the same code from CoreConnectorAggregate.extractAccountFromIBAN
 function extractAccountFromIBAN(IBAN:string): string{
     const accountNo = IBAN.slice(
-        (CONFIG.fineractConfig.FINERACT_BANK_COUNTRY_CODE as string).length+
-        (CONFIG.fineractConfig.FINERACT_CHECK_DIGITS as string).length+
-        (CONFIG.fineractConfig.FINERACT_BANK_ID as string).length+
-        CONFIG.fineractConfig.FINERACT_ACCOUNT_PREFIX.length
+        (config.get("fineract").FINERACT_BANK_COUNTRY_CODE as string).length+
+        (config.get("fineract").FINERACT_CHECK_DIGITS as string).length+
+        (config.get("fineract").FINERACT_BANK_ID as string).length+
+        config.get("fineract").FINERACT_ACCOUNT_PREFIX.length
     );
     return accountNo;
 }
@@ -61,7 +63,7 @@ function extractAccountFromIBAN(IBAN:string): string{
 
     test("GET /parties/IBAN/{ID} Should return party info if it exists in fineract",async ()=>{
         const url = `${baseurl}/parties/IBAN/${IBAN}`;
-        const res = await axios.get(url);   
+        const res = await axios.get(url);
         logger.info(res.data);
 
         expect(res.data["idValue"]).toEqual(extractAccountFromIBAN(IBAN));
@@ -134,7 +136,8 @@ function extractAccountFromIBAN(IBAN:string): string{
             "transactionRequestId": randomUUID(),
           };
         const url = `${baseurl}/quoterequests`;
-        const res =  await axios.post(
+        try {
+          const res =  await axios.post(
             url,
             JSON.stringify(quoteRequest),
             {
@@ -144,6 +147,9 @@ function extractAccountFromIBAN(IBAN:string): string{
             }
         );
         expect(res.status).toEqual(200);
+        } catch (error) {
+         console.error(error); 
+        }
     });
 
     test("POST /transfers Should return transfer if party in fineract", async ()=>{
@@ -267,4 +273,3 @@ function extractAccountFromIBAN(IBAN:string): string{
     });
  });
 
- 

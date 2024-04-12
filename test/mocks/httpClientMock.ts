@@ -27,6 +27,7 @@
 
 import { IHttpClient, ILogger, THttpResponse, TRequestOptions } from "src/domain";
 
+// todo: why do we need this? it's better to use axios-mock-adapter
 export class HttpClientMock implements IHttpClient{
     logger: ILogger;
 
@@ -37,6 +38,4 @@ export class HttpClientMock implements IHttpClient{
         this.logger.info(`${options.method} ${url}`);
         return;
     }
-    
 }
- 
