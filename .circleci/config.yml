@@ -195,6 +195,7 @@ jobs:
           name: Execute Functional Tests
           command: |
             source env.sh
+            echo $FINERACT_BASE_URL || "NO VARIABLE SET"
             npm run test:functional
       - run:
           name: Stop docker-compose TTK backend
