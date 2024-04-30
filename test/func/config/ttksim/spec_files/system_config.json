@@ -101,6 +101,13 @@
       "folderPath": "fineract_1.1",
       "asynchronous": false,
       "additionalApi": true
+    },
+    {
+      "type": "sdk-scheme-adapter-outbound-v2_0_0-openapi3-snippets",
+      "version": "1.0",
+      "folderPath": "sdk-scheme-adapter-outbound-v2_0_0-openapi3-snippets_1.0",
+      "asynchronous": false,
+      "additionalApi": true
     }
   ]
 }

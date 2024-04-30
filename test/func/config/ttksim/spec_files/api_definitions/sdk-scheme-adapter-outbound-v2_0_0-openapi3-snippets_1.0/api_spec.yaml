@@ -17,7 +17,7 @@ info:
     the term "FSP" is equal to the term "DFSP".
   license:
     name: Apache License Version 2.0, January 2004
-    url: https://github.com/mojaloop/documentation/blob/master/LICENSE.md
+    url: https://github.com/mojaloop/documentation/blob/main/LICENSE.md
   version: 1.0.0
 paths:
   /:
@@ -119,7 +119,7 @@ paths:
       tags:
         - BulkTransactions
       requestBody:
-        description: Bulk receiveTransfer request body
+        description: Bulk transfer request body
         content:
           application/json:
             schema:
@@ -175,7 +175,7 @@ paths:
       tags:
         - BulkTransfers
       requestBody:
-        description: Bulk receiveTransfer request body
+        description: Bulk transfer request body
         content:
           application/json:
             schema:
@@ -190,7 +190,7 @@ paths:
           $ref: '#/components/responses/errorResponse'
   /bulkTransfers/{bulkTransferId}:
     get:
-      summary: Retrieves information for a specific bulk receiveTransfer
+      summary: Retrieves information for a specific bulk transfer
       description: >-
         The HTTP request `GET /bulkTransfers/{bulkTransferId}` is used to get
         information regarding a bulk transfer created or requested earlier. The
@@ -202,13 +202,13 @@ paths:
         - $ref: '#/components/parameters/bulkTransferId'
       responses:
         '200':
-          description: Bulk receiveTransfer information successfully retrieved
+          description: Bulk transfer information successfully retrieved
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/bulkTransferStatusResponse'
         '500':
-          description: An error occurred processing the bulk receiveTransfer
+          description: An error occurred processing the bulk transfer
           content:
             application/json:
               schema:
@@ -294,6 +294,37 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/requestToPaySuccess'
+  /requestToPay/{transactionRequestId}:
+    put:
+      summary: >-
+        Continues a request funds from sender that has paused at the party
+        resolution stage in order to accept or reject party information
+      description: >
+        The HTTP request `PUT /requestToPay/{transactionRequestId}` is used to
+        continue a transfer initiated via the `POST /requestToPay` method that
+        has halted after party lookup stage.
+
+        The request body should contain the "acceptParty" property set to `true`
+        as required to continue the transfer.
+
+        See the description of the `POST /requestToPay` HTTP method for more
+        information on modes of transfer.
+      tags:
+        - RequestToPay
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/transferContinuationAcceptParty'
+      parameters:
+        - $ref: '#/components/parameters/transactionRequestId'
+      responses:
+        '200':
+          $ref: '#/components/responses/requestToPaySuccess'
+        '500':
+          $ref: '#/components/responses/transferServerError'
+        '504':
+          $ref: '#/components/responses/transferTimeout'
   /requestToPayTransfer:
     post:
       summary: >-
@@ -352,15 +383,15 @@ paths:
           $ref: '#/components/responses/transferServerError'
         '504':
           $ref: '#/components/responses/transferTimeout'
-  /requestToPayTransfer/{requestToPayTransactionId}:
+  /requestToPayTransfer/{transactionRequestId}:
     put:
       summary: >-
         Continues a transfer that has paused at the otp stage in order to accept
         or reject quote
       description: >
-        The HTTP request `PUT /transfers/{transferId}` is used to continue a
-        transfer initiated via the `POST /transfers` method that has halted
-        after party lookup and/or quotation stage.
+        This request is used to continue a requestToPayTransfer initiated via
+        the `POST /requestToPayTransfer` method that has halted after quotation
+        stage and/or otp stage.
 
 
         The request body should contain either the "acceptOTP" or "acceptQuote"
@@ -379,7 +410,7 @@ paths:
                 - $ref: '#/components/schemas/transferContinuationAcceptQuote'
                 - $ref: '#/components/schemas/transferContinuationAcceptOTP'
       parameters:
-        - $ref: '#/components/parameters/requestToPayTransactionId'
+        - $ref: '#/components/parameters/transactionRequestId'
       responses:
         '200':
           $ref: '#/components/responses/transferSuccess'
@@ -390,7 +421,7 @@ paths:
   /simpleTransfers:
     post:
       summary: Simple Transfers endpoint
-      description: is used to request a receiveTransfer
+      description: is used to request a transfer
       tags:
         - transfers
       operationId: SimpleTransfersPost
@@ -409,7 +440,6 @@ paths:
   /transfers:
     post:
       summary: Sends money from one account to another
-      operationId: postTransfers
       description: >
         The HTTP request `POST /transfers` is used to request the movement of
         funds from payer DFSP to payee DFSP.
@@ -468,7 +498,6 @@ paths:
       summary: >-
         Continues a transfer that has paused at the quote stage in order to
         accept or reject payee party and/or quote
-      operationId: putTransfersById
       description: >
         The HTTP request `PUT /transfers/{transferId}` is used to continue a
         transfer initiated via the `POST /transfers` method that has halted
@@ -501,7 +530,7 @@ paths:
         '504':
           $ref: '#/components/responses/transferTimeout'
     get:
-      summary: Retrieves information for a specific receiveTransfer
+      summary: Retrieves information for a specific transfer
       description: >-
         The HTTP request `GET /transfers/{transferId}` is used to get
         information regarding a transfer created or requested earlier. The
@@ -519,7 +548,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/transferStatusResponse'
         '500':
-          description: An error occurred processing the receiveTransfer
+          description: An error occurred processing the transfer
           content:
             application/json:
               schema:
@@ -915,8 +944,9 @@ components:
     transferError:
       type: object
       description: >-
-        This object represents a Mojaloop API error received at any time during
-        the transfer process
+        This may be a Mojaloop API error returned from another entity in the
+        scheme or an object representing other types of error e.g. exceptions
+        that may occur inside the scheme adapter.
       properties:
         httpStatusCode:
           type: integer
@@ -1260,7 +1290,7 @@ components:
       type: string
       pattern: ^[A-Za-z0-9-_]{43}$
       maxLength: 48
-      description: Condition that must be attached to the receiveTransfer by the Payer.
+      description: Condition that must be attached to the transfer by the Payer.
     quoteError:
       type: object
       description: >-
@@ -1325,7 +1355,7 @@ components:
           maxItems: 1000
           items:
             $ref: '#/components/schemas/individualQuoteResult'
-          description: List of individualQuoteResults in a bulk receiveTransfer response.
+          description: List of individualQuoteResults in a bulk transfer response.
     bulkQuoteErrorResponse:
       allOf:
         - $ref: '#/components/schemas/errorResponse'
@@ -1547,7 +1577,7 @@ components:
         from:
           $ref: '#/components/schemas/Party'
         individualTransfers:
-          description: List of individual transfers in a bulk receiveTransfer.
+          description: List of individual transfers in a bulk transfer.
           type: array
           minItems: 1
           items:
@@ -1579,7 +1609,7 @@ components:
       type: string
       pattern: ^[A-Za-z0-9-_]{43}$
       maxLength: 48
-      description: Fulfilment that must be attached to the receiveTransfer by the Payee.
+      description: Fulfilment that must be attached to the transfer by the Payee.
       example: WLctttbu2HvTsa1XWvUoGRcQozHsqeu9Ahl2JW9Bsu8
     individualTransferResult:
       type: object
@@ -1625,7 +1655,7 @@ components:
           maxItems: 1000
           items:
             $ref: '#/components/schemas/individualTransferResult'
-          description: List of individual receiveTransfer result in a bulk receiveTransfer response.
+          description: List of individual transfer result in a bulk transfer response.
     bulkTransferErrorResponse:
       allOf:
         - $ref: '#/components/schemas/errorResponse'
@@ -1690,7 +1720,7 @@ components:
         - individualTransfers
       properties:
         individualTransfers:
-          description: List of individual transfers in a bulk receiveTransfer.
+          description: List of individual transfers in a bulk transfer.
           type: array
           minItems: 1
           items:
@@ -1788,7 +1818,7 @@ components:
         from:
           $ref: '#/components/schemas/transferParty'
         individualTransfers:
-          description: List of individual transfers in a bulk receiveTransfer.
+          description: List of individual transfers in a bulk transfer.
           type: array
           minItems: 1
           maxItems: 1000
@@ -1838,7 +1868,6 @@ components:
           properties:
             body:
               $ref: '#/components/schemas/Party'
-              description: Information regarding the requested Party.
             headers:
               type: object
           required:
@@ -1993,7 +2022,6 @@ components:
       type: object
       properties:
         fspId:
-          title: destination DFSP requested to calculate the quote
           $ref: '#/components/schemas/FspId'
         quotesPostRequest:
           $ref: '#/components/schemas/QuotesPostRequest'
@@ -2053,20 +2081,31 @@ components:
       allOf:
         - $ref: '#/components/schemas/errorResponse'
         - type: object
+    AuthenticationType:
+      title: AuthenticationType
+      type: string
+      enum:
+        - OTP
+        - QRCODE
+        - U2F
+      description: |-
+        Below are the allowed values for the enumeration AuthenticationType.
+        - OTP - One-time password generated by the Payer FSP.
+        - QRCODE - QR code used as One Time Password.
+        - U2F - U2F is a new addition isolated to Thirdparty stream.
+      example: OTP
     requestToPayRequest:
       type: object
       required:
-        - homeTransactionId
+        - homeR2PTransactionId
         - from
         - to
         - amountType
         - currency
         - amount
-        - scenario
-        - initiator
-        - initiatorType
+        - transactionType
       properties:
-        homeTransactionId:
+        homeR2PTransactionId:
           type: string
           description: >-
             Transaction ID from the DFSP backend, used to reconcile transactions
@@ -2081,25 +2120,30 @@ components:
           $ref: '#/components/schemas/Currency'
         amount:
           $ref: '#/components/schemas/Amount'
-        scenario:
-          $ref: '#/components/schemas/TransactionType'
-        initiator:
-          $ref: '#/components/schemas/TransactionInitiator'
-        initiatorType:
-          $ref: '#/components/schemas/TransactionInitiatorType'
-    AuthenticationType:
-      title: AuthenticationType
+        transactionType:
+          $ref: '#/components/schemas/TransactionScenario'
+        subScenario:
+          $ref: '#/components/schemas/TransactionSubScenario'
+        authenticationType:
+          $ref: '#/components/schemas/AuthenticationType'
+    requestToPayStatus:
       type: string
       enum:
-        - OTP
-        - QRCODE
-        - U2F
-      description: |-
-        Below are the allowed values for the enumeration AuthenticationType.
-        - OTP - One-time password generated by the Payer FSP.
-        - QRCODE - QR code used as One Time Password.
-        - U2F - U2F is a new addition isolated to Thirdparty stream.
-      example: OTP
+        - ERROR_OCCURRED
+        - WAITING_FOR_PARTY_ACCEPTANCE
+        - COMPLETED
+    getPartiesResponse:
+      title: getPartiesResponse
+      type: object
+      description: The object sent in the GET /parties/{Type}/{ID} callback.
+      properties:
+        body:
+          $ref: '#/components/schemas/Party'
+        headers:
+          type: object
+      required:
+        - body
+        - headers
     TransactionRequestState:
       title: TransactionRequestState
       type: string
@@ -2115,6 +2159,27 @@ components:
         - ACCEPTED - Payer has approved the transaction.
         - REJECTED - Payer has rejected the transaction.
       example: RECEIVED
+    TransactionRequestResponse:
+      title: TransactionRequestResponse
+      type: object
+      description: The object sent in the PUT /transactionRequests/{ID} callback.
+      properties:
+        body:
+          type: object
+          properties:
+            transactionId:
+              $ref: '#/components/schemas/CorrelationId'
+            transactionRequestState:
+              $ref: '#/components/schemas/TransactionRequestState'
+            extensionList:
+              $ref: '#/components/schemas/ExtensionList'
+          required:
+            - transactionRequestState
+        headers:
+          type: object
+      required:
+        - body
+        - headers
     requestToPayResponse:
       type: object
       required:
@@ -2125,7 +2190,7 @@ components:
         - currency
         - amount
         - transactionType
-        - requestToPayState
+        - currentState
       properties:
         transactionRequestId:
           $ref: '#/components/schemas/CorrelationId'
@@ -2139,52 +2204,18 @@ components:
           $ref: '#/components/schemas/Currency'
         amount:
           $ref: '#/components/schemas/Amount'
-        scenario:
-          $ref: '#/components/schemas/TransactionType'
-        initiator:
-          $ref: '#/components/schemas/TransactionInitiator'
-        initiatorType:
-          $ref: '#/components/schemas/TransactionInitiatorType'
-        authenticationType:
-          $ref: '#/components/schemas/AuthenticationType'
-        requestToPayState:
-          $ref: '#/components/schemas/TransactionRequestState'
-    requestToPayTransferRequest:
-      type: object
-      required:
-        - requestToPayTransactionId
-        - from
-        - to
-        - amountType
-        - currency
-        - amount
-        - scenario
-        - initiator
-        - initiatorType
-      properties:
-        requestToPayTransactionId:
-          type: string
-          description: >-
-            Transaction ID from the DFSP backend, used to reconcile transactions
-            between the Switch and DFSP backend systems.
-        from:
-          $ref: '#/components/schemas/transferParty'
-        to:
-          $ref: '#/components/schemas/transferParty'
-        amountType:
-          $ref: '#/components/schemas/AmountType'
-        currency:
-          $ref: '#/components/schemas/Currency'
-        amount:
-          $ref: '#/components/schemas/Amount'
-        scenario:
-          $ref: '#/components/schemas/TransactionType'
-        initiator:
-          $ref: '#/components/schemas/TransactionInitiator'
-        initiatorType:
-          $ref: '#/components/schemas/TransactionInitiatorType'
-        note:
-          $ref: '#/components/schemas/Note'
+        transactionType:
+          $ref: '#/components/schemas/TransactionScenario'
+        subScenario:
+          $ref: '#/components/schemas/TransactionSubScenario'
+        currentState:
+          $ref: '#/components/schemas/requestToPayStatus'
+        getPartiesResponse:
+          $ref: '#/components/schemas/getPartiesResponse'
+        transactionRequestResponse:
+          $ref: '#/components/schemas/TransactionRequestResponse'
+        lastError:
+          $ref: '#/components/schemas/transferError'
     transferStatus:
       type: string
       enum:
@@ -2235,60 +2266,6 @@ components:
           $ref: '#/components/schemas/ExtensionList'
       required:
         - transferState
-    requestToPayTransferResponse:
-      type: object
-      required:
-        - requestToPayTransactionId
-        - from
-        - to
-        - amountType
-        - currency
-        - amount
-        - transactionType
-      properties:
-        transferId:
-          $ref: '#/components/schemas/CorrelationId'
-        requestToPayTransactionId:
-          type: string
-          description: >-
-            Transaction ID from the DFSP backend, used to reconcile transactions
-            between the Switch and DFSP backend systems.
-        from:
-          $ref: '#/components/schemas/transferParty'
-        to:
-          $ref: '#/components/schemas/transferParty'
-        amountType:
-          $ref: '#/components/schemas/AmountType'
-        currency:
-          $ref: '#/components/schemas/Currency'
-        amount:
-          $ref: '#/components/schemas/Amount'
-        transactionType:
-          $ref: '#/components/schemas/transferTransactionType'
-        note:
-          $ref: '#/components/schemas/Note'
-        currentState:
-          $ref: '#/components/schemas/transferStatus'
-        quoteId:
-          $ref: '#/components/schemas/CorrelationId'
-        quoteResponse:
-          $ref: '#/components/schemas/QuotesIDPutResponse'
-        quoteResponseSource:
-          type: string
-          description: >
-            FSPID of the entity that supplied the quote response. This may not
-            be the same as the FSPID of the entity which owns the end user
-            account in the case of a FOREX transfer. i.e. it may be a FOREX
-            gateway.
-        fulfil:
-          $ref: '#/components/schemas/TransfersIDPutResponse'
-        lastError:
-          description: >
-            Object representing the last error to occur during a transfer
-            process. This may be a Mojaloop API error returned from another
-            entity in the scheme or an object representing other types of error
-            e.g. exceptions that may occur inside the scheme adapter.
-          $ref: '#/components/schemas/transferError'
     transferResponse:
       type: object
       required:
@@ -2362,11 +2339,6 @@ components:
             headers:
               type: object
         lastError:
-          description: >
-            Object representing the last error to occur during a transfer
-            process. This may be a Mojaloop API error returned from another
-            entity in the scheme or an object representing other types of error
-            e.g. exceptions that may occur inside the scheme adapter.
           $ref: '#/components/schemas/transferError'
         skipPartyLookup:
           description: >-
@@ -2383,6 +2355,203 @@ components:
           properties:
             transferState:
               $ref: '#/components/schemas/transferResponse'
+    requestToPayTransferRequest:
+      type: object
+      required:
+        - homeR2PTransactionId
+        - transactionRequestId
+        - from
+        - to
+        - amountType
+        - currency
+        - amount
+        - scenario
+        - initiator
+        - initiatorType
+      properties:
+        homeR2PTransactionId:
+          type: string
+          description: >-
+            Transaction ID from the DFSP backend, used to reconcile transactions
+            between the Switch and DFSP backend systems.
+        transactionRequestId:
+          $ref: '#/components/schemas/CorrelationId'
+        from:
+          $ref: '#/components/schemas/transferParty'
+        to:
+          $ref: '#/components/schemas/transferParty'
+        amountType:
+          $ref: '#/components/schemas/AmountType'
+        currency:
+          $ref: '#/components/schemas/Currency'
+        amount:
+          $ref: '#/components/schemas/Amount'
+        scenario:
+          $ref: '#/components/schemas/TransactionScenario'
+        subScenario:
+          $ref: '#/components/schemas/TransactionSubScenario'
+        initiator:
+          $ref: '#/components/schemas/TransactionInitiator'
+        initiatorType:
+          $ref: '#/components/schemas/TransactionInitiatorType'
+        note:
+          $ref: '#/components/schemas/Note'
+        authenticationType:
+          $ref: '#/components/schemas/AuthenticationType'
+    AuthenticationValue:
+      title: AuthenticationValue
+      anyOf:
+        - title: OtpValue
+          type: string
+          pattern: ^\d{3,10}$
+          description: >-
+            The API data type OtpValue is a JSON String of 3 to 10 characters,
+            consisting of digits only. Negative numbers are not allowed. One or
+            more leading zeros are allowed.
+        - title: QRCODE
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: QR code used as a One Time Password.
+        - title: U2FPinValue
+          type: object
+          description: >
+            U2F challenge-response, where payer FSP verifies if the response
+            provided by end-user device matches the previously registered key.
+          properties:
+            pinValue:
+              type: string
+              pattern: ^\S{1,64}$
+              minLength: 1
+              maxLength: 64
+              description: >
+                U2F challenge-response, where payer FSP verifies if the response
+                provided by end-user device matches the previously registered
+                key.
+            counter:
+              title: Integer
+              type: string
+              pattern: ^[1-9]\d*$
+              description: >-
+                Sequential counter used for cloning detection. Present only for
+                U2F authentication.
+          required:
+            - pinValue
+            - counter
+      pattern: ^\d{3,10}$|^\S{1,64}$
+      description: >-
+        Contains the authentication value. The format depends on the
+        authentication type used in the AuthenticationInfo complex type.
+    AuthenticationInfo:
+      title: AuthenticationInfo
+      type: object
+      description: Data model for the complex type AuthenticationInfo.
+      properties:
+        authentication:
+          $ref: '#/components/schemas/AuthenticationType'
+        authenticationValue:
+          $ref: '#/components/schemas/AuthenticationValue'
+      required:
+        - authentication
+        - authenticationValue
+    AuthorizationResponseType:
+      title: AuthorizationResponseType
+      type: string
+      enum:
+        - ENTERED
+        - REJECTED
+        - RESEND
+      description: |-
+        Below are the allowed values for the enumeration.
+        - ENTERED - Consumer entered the authentication value.
+        - REJECTED - Consumer rejected the transaction.
+        - RESEND - Consumer requested to resend the authentication value.
+      example: ENTERED
+    AuthorizationIDPutResponse:
+      title: AuthorizationIDPutResponse
+      type: object
+      description: The object sent in the PUT /authorizations/{ID} callback.
+      properties:
+        authenticationInfo:
+          $ref: '#/components/schemas/AuthenticationInfo'
+        responseType:
+          $ref: '#/components/schemas/AuthorizationResponseType'
+      required:
+        - responseType
+    requestToPayTransferResponse:
+      type: object
+      required:
+        - transactionRequestId
+        - from
+        - to
+        - amountType
+        - currency
+        - amount
+        - transactionType
+      properties:
+        transferId:
+          $ref: '#/components/schemas/CorrelationId'
+        homeR2PTransactionId:
+          type: string
+          description: >-
+            Transaction ID from the DFSP backend, used to reconcile transactions
+            between the Switch and DFSP backend systems.
+        transactionRequestId:
+          $ref: '#/components/schemas/CorrelationId'
+        from:
+          $ref: '#/components/schemas/transferParty'
+        to:
+          $ref: '#/components/schemas/transferParty'
+        amountType:
+          $ref: '#/components/schemas/AmountType'
+        currency:
+          $ref: '#/components/schemas/Currency'
+        amount:
+          $ref: '#/components/schemas/Amount'
+        transactionType:
+          $ref: '#/components/schemas/transferTransactionType'
+        note:
+          $ref: '#/components/schemas/Note'
+        currentState:
+          $ref: '#/components/schemas/transferStatus'
+        quoteId:
+          $ref: '#/components/schemas/CorrelationId'
+        quoteResponse:
+          type: object
+          required:
+            - body
+          properties:
+            body:
+              $ref: '#/components/schemas/QuotesIDPutResponse'
+            headers:
+              type: object
+        quoteResponseSource:
+          type: string
+          description: >
+            FSPID of the entity that supplied the quote response. This may not
+            be the same as the FSPID of the entity which owns the end user
+            account in the case of a FOREX transfer. i.e. it may be a FOREX
+            gateway.
+        authorizationResponse:
+          type: object
+          required:
+            - body
+          properties:
+            body:
+              $ref: '#/components/schemas/AuthorizationIDPutResponse'
+            headers:
+              type: object
+        fulfil:
+          type: object
+          required:
+            - body
+          properties:
+            body:
+              $ref: '#/components/schemas/TransfersIDPutResponse'
+            headers:
+              type: object
+        lastError:
+          $ref: '#/components/schemas/transferError'
     transferContinuationAcceptOTP:
       type: object
       required:
@@ -2561,7 +2730,7 @@ components:
           schema:
             $ref: '#/components/schemas/bulkQuoteErrorResponse'
     bulkTransactionAccepted:
-      description: Bulk receiveTransfer accepted successfully
+      description: Bulk transfer accepted successfully
     bulkTransferBadRequest:
       description: Malformed or missing required body, headers or parameters
       content:
@@ -2583,7 +2752,7 @@ components:
               - $ref: '#/components/schemas/bulkTransactionAcceptPartyErrorResponse'
               - $ref: '#/components/schemas/bulkTransactionAcceptQuoteErrorResponse'
     bulkTransferSuccess:
-      description: Bulk receiveTransfer completed successfully
+      description: Bulk transfer completed successfully
       content:
         application/json:
           schema:
@@ -2621,6 +2790,18 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/requestToPayResponse'
+    transferServerError:
+      description: An error occurred processing the transfer
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/errorTransferResponse'
+    transferTimeout:
+      description: Timeout occurred processing the transfer
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/errorTransferResponse'
     requestToPayTransferSuccess:
       description: Transfer completed successfully
       content:
@@ -2629,18 +2810,6 @@ components:
             $ref: '#/components/schemas/requestToPayTransferResponse'
     requestToPayTransferBadRequest:
       description: Malformed or missing required body, headers or parameters
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/errorTransferResponse'
-    transferServerError:
-      description: An error occurred processing the receiveTransfer
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/errorTransferResponse'
-    transferTimeout:
-      description: Timeout occurred processing the receiveTransfer
       content:
         application/json:
           schema:
@@ -2720,15 +2889,15 @@ components:
       description: >-
         A sub-identifier of the party identifier, or a sub-type of the party
         identifier's type. For example, `PASSPORT`, `DRIVING_LICENSE`.
-    requestToPayTransactionId:
-      name: requestToPayTransactionId
+    transactionRequestId:
+      name: transactionRequestId
       in: path
       required: true
       schema:
         $ref: '#/components/schemas/CorrelationId'
       description: >-
-        Identifier of the merchant request to pay transfer to continue as
-        returned in the response to a `POST /requestToPayTransfer` request.
+        Identifier of the merchant request to pay to continue as returned in the
+        response to a `POST /requestToPay` request.
     transferId:
       name: transferId
       in: path

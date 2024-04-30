@@ -152,7 +152,7 @@ function extractAccountFromIBAN(IBAN:string): string{
         }
     });
 
-    test("POST /transfers Should return transfer if party in fineract", async ()=>{
+    test("POST /transfers Should return receiveTransfer if party in fineract", async ()=>{
       const transfer: TtransferRequest = {
         "homeR2PTransactionId": "string",
         "amount": "500",

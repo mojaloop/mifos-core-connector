@@ -112,14 +112,14 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/bulkTransferRequest'
-        description: An incoming bulk transfer request.
+        description: An incoming bulk receiveTransfer request.
       responses:
         '200':
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/bulkTransferResponse'
-          description: The bulk transfer was accepted.
+          description: The bulk receiveTransfer was accepted.
         '400':
           $ref: '#/components/responses/400'
         '500':
@@ -140,7 +140,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bulkTransferResponse'
-          description: Response containing details of the requested bulk transfer.
+          description: Response containing details of the requested bulk receiveTransfer.
         '400':
           $ref: '#/components/responses/400'
         '404':
@@ -298,19 +298,19 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/quoteRequest'
-        description: Request for a transfer quotation.
+        description: Request for a receiveTransfer quotation.
       responses:
         '200':
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/quoteResponse'
-          description: A response to the transfer quotation request.
+          description: A response to the receiveTransfer quotation request.
         '400':
           $ref: '#/components/responses/400'
         '500':
           $ref: '#/components/responses/500'
-      summary: Requests a quote for the specified transfer.
+      summary: Requests a quote for the specified receiveTransfer.
       tags:
         - Quotes
   /transactionrequests:
@@ -328,7 +328,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/transactionRequestResponse'
-          description: A response to the transfer transaction request.
+          description: A response to the receiveTransfer transaction request.
         '400':
           $ref: '#/components/responses/400'
         '500':
@@ -347,14 +347,14 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/transferRequest'
-        description: An incoming transfer request.
+        description: An incoming receiveTransfer request.
       responses:
         '200':
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/transferResponse'
-          description: The transfer was accepted.
+          description: The receiveTransfer was accepted.
         '400':
           $ref: '#/components/responses/400'
         '500':
@@ -378,10 +378,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/transferDetailsResponse'
-          description: The transfer was accepted.
+          description: The receiveTransfer was accepted.
         '500':
           $ref: '#/components/responses/500'
-      summary: Retrieves information for a specific transfer.
+      summary: Retrieves information for a specific receiveTransfer.
       tags:
         - Transfers
     put:
@@ -396,13 +396,13 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/fulfilNotification'
-        description: An incoming notification for fulfiled transfer.
+        description: An incoming notification for fulfiled receiveTransfer.
       responses:
         '200':
           description: The notification was accepted.
         '500':
           $ref: '#/components/responses/500'
-      summary: Receive notification for a specific transfer.
+      summary: Receive notification for a specific receiveTransfer.
       tags:
         - Transfers
 components:
@@ -573,7 +573,7 @@ components:
         - quoteId
       type: object
     IndividualTransfer:
-      description: Data model for individual transfer in a bulk transfer request.
+      description: Data model for individual receiveTransfer in a bulk receiveTransfer request.
       properties:
         amount:
           $ref: '#/components/schemas/money'
@@ -608,7 +608,7 @@ components:
         - currency
       type: object
     IndividualTransferResult:
-      description: Data model for individual transfer in a bulk transfer response.
+      description: Data model for individual receiveTransfer in a bulk receiveTransfer response.
       properties:
         errorResponse:
           $ref: '#/components/schemas/errorResponse'
@@ -648,7 +648,7 @@ components:
       description: Middle name of the Party (Name Type).
       example: Johannes
     amountCurrency:
-      description: Object containing Amount and Currency of the transfer.
+      description: Object containing Amount and Currency of the receiveTransfer.
       properties:
         amount:
           $ref: '#/components/schemas/money'
@@ -713,7 +713,7 @@ components:
         - individualQuoteResults
       type: object
     bulkTransferId:
-      description: A Mojaloop API transfer identifier (UUID).
+      description: A Mojaloop API receiveTransfer identifier (UUID).
       pattern: >-
         ^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
       type: string
@@ -1119,7 +1119,7 @@ components:
       minLength: 1
       type: string
     ilpPacketData:
-      description: Object containing transfer object.
+      description: Object containing receiveTransfer object.
       properties:
         amount:
           $ref: '#/components/schemas/amountCurrency'
@@ -1196,7 +1196,7 @@ components:
         ^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
       type: string
     quoteRequest:
-      description: A request for a quote for transfer from the DFSP backend.
+      description: A request for a quote for receiveTransfer from the DFSP backend.
       properties:
         amount:
           $ref: '#/components/schemas/money'
@@ -1221,7 +1221,7 @@ components:
         initiatorType:
           $ref: '#/components/schemas/initiatorType'
         note:
-          description: An optional note associated with the requested transfer.
+          description: An optional note associated with the requested receiveTransfer.
           maxLength: 128
           minLength: 1
           type: string
@@ -1299,7 +1299,7 @@ components:
         ^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
       type: string
     transactionRequest:
-      description: A request for a pull based transfer.
+      description: A request for a pull based receiveTransfer.
       properties:
         amount:
           $ref: '#/components/schemas/money'
@@ -1316,7 +1316,7 @@ components:
         initiatorType:
           $ref: '#/components/schemas/initiatorType'
         note:
-          description: An optional note associated with the requested transfer.
+          description: An optional note associated with the requested receiveTransfer.
           maxLength: 128
           minLength: 1
           type: string
@@ -1376,7 +1376,7 @@ components:
         - PAYMENT
       type: string
     transactionTypeObject:
-      description: Object containing transfer object.
+      description: Object containing receiveTransfer object.
       properties:
         initiator:
           $ref: '#/components/schemas/initiator'
@@ -1433,7 +1433,7 @@ components:
         - timestamp
       type: object
     transferId:
-      description: A Mojaloop API transfer identifier (UUID).
+      description: A Mojaloop API receiveTransfer identifier (UUID).
       pattern: >-
         ^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
       type: string
@@ -2112,7 +2112,7 @@ components:
       type: string
       pattern: ^[A-Za-z0-9-_]{43}$
       maxLength: 48
-      description: Condition that must be attached to the transfer by the Payer.
+      description: Condition that must be attached to the receiveTransfer by the Payer.
     ErrorCode:
       title: ErrorCode
       type: string
@@ -2194,7 +2194,7 @@ components:
       type: string
       pattern: ^[A-Za-z0-9-_]{43}$
       maxLength: 48
-      description: Fulfilment that must be attached to the transfer by the Payee.
+      description: Fulfilment that must be attached to the receiveTransfer by the Payee.
       example: WLctttbu2HvTsa1XWvUoGRcQozHsqeu9Ahl2JW9Bsu8
     TransferState:
       title: TransferState
@@ -2304,7 +2304,7 @@ components:
         options:
           $ref: '#/components/schemas/bulkTransactionOptions'
         individualTransferResults:
-          description: List of individual transfer result in a bulk transfer response.
+          description: List of individual receiveTransfer result in a bulk receiveTransfer response.
           type: array
           minItems: 1
           items:

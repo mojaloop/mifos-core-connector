@@ -12,13 +12,13 @@ services:
     networks:
       - mojaloop-net
     environment:
-      - FINERACT_TENTANT_ID=default
+      - FINERACT_TENANT_ID=default
       - FINERACT_AUTH_MODE=basic
       - FINERACT_USERNAME=mifos
       - FINERACT_PASSWORD=password
-      - FINERACT_BANK_ID=0720 
+      - FINERACT_BANK_ID=0720
       - FINERACT_ACCOUNT_PREFIX=000289
-      - FINERACT_BANK_COUNTRY_CODE=UG 
+      - FINERACT_BANK_COUNTRY_CODE=UG
       - FINERACT_CHECK_DIGITS=68
       - HOST=mifosCoreConnector
       - PORT= 3000
