@@ -25,29 +25,27 @@ optionally within square brackets <email>.
 --------------
 ******/
 
-"use strict";
+'use strict';
 
-import {THttpResponse, TRequestOptions} from "./types";
+import { THttpRequestOptions, THttpResponse, TJson } from './types';
+import { AxiosRequestConfig } from 'axios';
 
-export type TJson =
-  | string
-  | number
-  | boolean
-  | { [x: string]: TJson }
-  | Array<TJson>;
-
-export interface IHttpClient{
-    send<R = unknown>(url:string, options: TRequestOptions):Promise<THttpResponse<R> | undefined>;
-    // todo: do you plan to add a separate methods for GET, POST, PUT... etc?
+export interface IHTTPClient {
+    get<R = unknown>(url: string, options?: THttpRequestOptions): Promise<THttpResponse<R>>;
+    post<D extends TJson, R = unknown>(url: string, data: D, options?: THttpRequestOptions): Promise<THttpResponse<R>>;
+    put<D extends TJson, R = unknown>(url: string, data: D, options?: THttpRequestOptions): Promise<THttpResponse<R>>;
+    // todo: add other methods
+    send<R = unknown>(options: AxiosRequestConfig): Promise<THttpResponse<R>>;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type TLogMethod = (message: string, meta?: any) => void;
+export type TLogMethod = (message: string | Error, meta?: any) => void;
 // todo: - think, if message should be only string
 //       - how to pass Error object
 //       - what type meta should have?
 
-export interface ILogger { // based on @mojaloop/central-services-logger impl.
+export interface ILogger {
+    // based on @mojaloop/central-services-logger impl.
     error: TLogMethod;
     warn: TLogMethod;
     trace: TLogMethod;
