@@ -25,12 +25,28 @@
  --------------
  ******/
 
- "use strict";
+'use strict';
 
-import { AxiosHttpClient } from "./axiosClient";
+import { AxiosHTTPClient } from './axiosClient';
+import { CreateAxiosDefaults } from 'axios';
+import { loggerFactory } from '../logger';
 
- export class AxiosClientFactory{
-    static createAxiosClientInstance(){
-        return new AxiosHttpClient();
+export const defaultHttpOptions: CreateAxiosDefaults = Object.freeze({
+    timeout: 3000,
+    headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+    },
+    transitional: {
+        clarifyTimeoutError: true, // to throw ETIMEDOUT error instead of generic ECONNABORTED on request timeouts
+    },
+});
+
+export class AxiosClientFactory {
+    static createAxiosClientInstance() {
+        return new AxiosHTTPClient({
+            options: defaultHttpOptions,
+            logger: loggerFactory({ context: 'http' }),
+        });
     }
- }
+}

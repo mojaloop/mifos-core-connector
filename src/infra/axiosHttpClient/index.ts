@@ -25,6 +25,6 @@
  --------------
  ******/
 
- "use strict";
+'use strict';
 
- export * from "./axiosClientFactory";
+export * from './axiosClientFactory';

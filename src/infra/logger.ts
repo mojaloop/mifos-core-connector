@@ -7,9 +7,8 @@ import stringify from 'fast-safe-stringify';
 import { ILogger } from '../domain';
 import { TJson } from './httpClient';
 
-const makeLogString = (message: string, meta?: unknown) => meta
-    ? `${message} - ${typeof meta === 'object' ? stringify(meta) : meta}`
-    : message;
+const makeLogString = (message: string, meta?: unknown) =>
+    meta ? `${message} - ${typeof meta === 'object' ? stringify(meta) : meta}` : message;
 
 // todo: set logLevel from config
 export const loggerFactory = (context: TJson = {}): ILogger => new Logger(context);
