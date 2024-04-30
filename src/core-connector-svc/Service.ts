@@ -25,55 +25,55 @@ optionally within square brackets <email>.
 --------------
 ******/
 
-"use strict";
+'use strict';
 
-import { Server } from "@hapi/hapi";
-import { IHttpClient } from "../domain";
-import { CoreConnectorAggregate } from "../domain";
-import { AxiosClientFactory } from "../infra/axiosHttpClient";
-import config from "../config";
-import { CoreConnectorRoutes } from "./coreConnectorRoutes";
-import { loggerFactory } from "../infra/logger";
+import { Server } from '@hapi/hapi';
+import { IHTTPClient } from '../domain';
+import { CoreConnectorAggregate } from '../domain';
+import { AxiosClientFactory } from '../infra/axiosHttpClient';
+import config from '../config';
+import { CoreConnectorRoutes } from './coreConnectorRoutes';
+import { loggerFactory } from '../infra/logger';
 import { createPlugins } from '../plugins';
-import { FineractClientFactory } from "../domain/FineractClient";
+import { FineractClientFactory } from '../domain/FineractClient';
 
 const logger = loggerFactory({ context: 'MifosCC' });
 
 export class Service {
     static coreConnectorAggregate: CoreConnectorAggregate;
-    static httpClient: IHttpClient;
+    static httpClient: IHTTPClient;
     static server: Server;
 
-    static async start(httpClient?: IHttpClient){
-        if(!httpClient){
+    static async start(httpClient?: IHTTPClient) {
+        if (!httpClient) {
             httpClient = AxiosClientFactory.createAxiosClientInstance();
         }
         this.httpClient = httpClient;
-        const fineractConfig = config.get("fineract");
+        const fineractConfig = config.get('fineract');
         const fineractClient = FineractClientFactory.createClient({
             fineractConfig: fineractConfig,
             httpClient: this.httpClient,
-            logger: logger
+            logger: logger,
         });
-        this.coreConnectorAggregate = new CoreConnectorAggregate(fineractConfig,fineractClient,logger);
+        this.coreConnectorAggregate = new CoreConnectorAggregate(fineractConfig, fineractClient, logger);
 
         await this.setupAndStartUpServer();
-        logger.info("Core Connector Server started");
+        logger.info('Core Connector Server started');
     }
 
-    static async setupAndStartUpServer(){
-            this.server = new Server(config.get('server'));
-            await this.server.register(createPlugins({ logger }));
+    static async setupAndStartUpServer() {
+        this.server = new Server(config.get('server'));
+        await this.server.register(createPlugins({ logger }));
 
-            const coreConnectorRoutes = new CoreConnectorRoutes(this.coreConnectorAggregate, logger);
-            this.server.route(coreConnectorRoutes.getRoutes());
-            await this.server.start();
-            logger.info(`Core Connector Server running at ${this.server.info.uri}`);
+        const coreConnectorRoutes = new CoreConnectorRoutes(this.coreConnectorAggregate, logger);
+        this.server.route(coreConnectorRoutes.getRoutes());
+        await this.server.start();
+        logger.info(`Core Connector Server running at ${this.server.info.uri}`);
     }
 
-    static async stop(){
-        await this.server.stop({timeout: 60});
-        logger.info("Service Stopped");
+    static async stop() {
+        await this.server.stop({ timeout: 60 });
+        logger.info('Service Stopped');
     }
 }
 
@@ -104,7 +104,7 @@ process.on('exit', async () => {
 });
 
 /* istanbul ignore next */
-process.on('uncaughtException',(err: Error) => {
+process.on('uncaughtException', (err: Error) => {
     logger.error(`UncaughtException: ${err?.message}`, err);
     process.exit(999);
 });
