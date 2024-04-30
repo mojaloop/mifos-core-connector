@@ -24,18 +24,17 @@
 
  --------------
  ******/
-"use strict";
+'use strict';
 
+import { FineractClient } from './FineractClient';
+import { TFineractClientFactoryDeps } from './types';
 
-import { FineractClient } from "./FineractClient";
-import { TFineractClientFactoryDeps } from "./types";
-
-export class FineractClientFactory{
-    static createClient(finClientfactoryDeps: TFineractClientFactoryDeps){
+export class FineractClientFactory {
+    static createClient(finClientfactoryDeps: TFineractClientFactoryDeps) {
         return new FineractClient(
             finClientfactoryDeps.fineractConfig,
             finClientfactoryDeps.httpClient,
-            finClientfactoryDeps.logger
+            finClientfactoryDeps.logger,
         );
     }
 }
