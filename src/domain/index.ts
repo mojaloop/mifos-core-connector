@@ -25,5 +25,5 @@
  --------------
  ******/
 
-export * from "./coreConnectorAgg";
-export * from "./interfaces";
+export * from './coreConnectorAgg';
+export * from './interfaces';
