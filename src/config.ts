@@ -18,11 +18,11 @@ const config = Convict<IConfigSchema>({
             default: null, // required
             env: 'FINERACT_BASE_URL',
         },
-        FINERACT_TENTANT_ID: {
-            doc: 'FINERACT_TENTANT_ID',
+        FINERACT_TENANT_ID: {
+            doc: 'FINERACT_TENANT_ID',
             format: String,
             default: null,
-            env: 'FINERACT_TENTANT_ID',
+            env: 'FINERACT_TENANT_ID',
         },
         FINERACT_AUTH_MODE: {
             doc: 'FINERACT_AUTH_MODE', // todo: add proper description

@@ -3,8 +3,8 @@ import { ILogger } from '../domain';
 import { ReqAppState } from './types';
 
 export type LoggingPluginOptions = {
-  logger: ILogger;
-}
+    logger: ILogger;
+};
 
 export const loggingPlugin: Plugin<LoggingPluginOptions> = {
     name: 'loggingPlugin',
@@ -16,10 +16,14 @@ export const loggingPlugin: Plugin<LoggingPluginOptions> = {
         server.ext({
             type: 'onPreHandler',
             method: (req: Request, h: ResponseToolkit) => {
-                const { path, method, info} = req;
-                const { id, remoteAddress, received} = info;
+                const { path, method, info } = req;
+                const { id, remoteAddress, received } = info;
                 const context = {
-                    id, remoteAddress, path, method, received,
+                    id,
+                    remoteAddress,
+                    path,
+                    method,
+                    received,
                 };
                 Object.assign(req.app, { context });
                 logger.info(`[==> req] ${method.toUpperCase()} ${path}`, context);
@@ -35,9 +39,7 @@ export const loggingPlugin: Plugin<LoggingPluginOptions> = {
                 const { context } = req.app as ReqAppState; // todo: think, how to specify req.app type
                 const responseTimeSec = ((Date.now() - context.received) / 1000).toFixed(3);
 
-                const statusCode = response instanceof Error
-                    ? response.output.statusCode
-                    : response.statusCode;
+                const statusCode = response instanceof Error ? response.output.statusCode : response.statusCode;
                 logger.info(`[<== ${statusCode}][${responseTimeSec} s] ${method.toUpperCase()} ${path}`, context);
 
                 return h.continue;
