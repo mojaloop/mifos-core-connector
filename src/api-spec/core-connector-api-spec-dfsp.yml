@@ -55,6 +55,24 @@ paths:
                                 acceptQuote:
                                     type: boolean
                                     example: true
+                                fineractTransaction:
+                                    type: object
+                                    properties:
+                                        fineractAccountId:
+                                            type: number
+                                            example: 1
+                                        totalAmount:
+                                            type: number
+                                            example: 882.3
+                                        routingCode:
+                                            type: string
+                                            example: "12445"
+                                        receiptNumber:
+                                            type: string
+                                            example: "23249993"
+                                        bankNumber:
+                                            type: string
+                                            example: "7823"
             responses:
                 '200':
                     $ref: '#/components/responses/transferSuccess'
@@ -778,6 +796,18 @@ components:
                 mojaloopError:
                     $ref: '#/components/schemas/mojaloopError'
 
+        fineractTransferResponse:
+            type: object
+            properties:
+                totalAmountFromFineract:
+                    type: string
+                    example: "8834.4"
+                transferResponse:
+                    type: object
+                    properties:
+                        transferResponse:
+                            $ref: "#/components/schemas/transferResponse"
+
         transferResponse:
             type: object
             required:
@@ -976,7 +1006,7 @@ components:
             content:
                 application/json:
                     schema:
-                        $ref: '#/components/schemas/transferResponse'
+                        $ref: '#/components/schemas/fineractTransferResponse'
 
         transferBadRequest:
             description: Malformed or missing required body, headers or parameters
