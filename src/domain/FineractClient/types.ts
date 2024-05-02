@@ -116,7 +116,18 @@ export type TFineractGetAccountResponse = {
     daysToInactive: number;
     daysToDormancy: number;
     daysToEscheat: number;
-    summary: unknown;
+    summary: {
+        currency: {
+            code: string;
+            name: string;
+            decimalPlaces: number;
+            displaySymbol: string;
+            nameCode: string;
+            displayLabel: string;
+        };
+        accountBalance: number;
+        availableBalance: number;
+    };
 };
 
 export type TFineractGetClientResponse = {
@@ -183,9 +194,11 @@ export interface IFineractClient {
     logger: ILogger;
     lookupPartyInfo(accountNo: string): Promise<TLookupResponseInfo>;
     verifyBeneficiary(accountNo: string): Promise<TLookupResponseInfo>;
-    receiveTransfer(transferDeps: TFineracttransferDeps): Promise<TFineractTransactionResponse>;
+    receiveTransfer(transferDeps: TFineractTransferDeps): Promise<THttpResponse<TFineractTransactionResponse>>;
     getAccountId(accountNo: string): Promise<TLookupResponseInfo>;
-    sendTransfer(transactionPayload: TFineracttransferDeps): Promise<THttpResponse<TFineractTransactionResponse>>;
+    calculateQuote(quoteDeps: TCalculateQuoteDeps): Promise<TCalculateQuoteResponse>;
+    getSavingsAccount(accountId: number): Promise<THttpResponse<TFineractGetAccountResponse>>;
+    sendTransfer(transactionPayload: TFineractTransferDeps): Promise<THttpResponse<TFineractTransactionResponse>>;
 }
 
 export type TFineractClientFactoryDeps = {
@@ -195,13 +208,13 @@ export type TFineractClientFactoryDeps = {
 };
 
 export type TCalculateQuoteDeps = {
-    accountNo: string;
+    accountNo?: string;
     amount: number;
 };
 
 export type TCalculateQuoteResponse = {
     feeAmount: number;
-    accountNo: string;
+    accountNo?: string;
 };
 
 export type TFineractTransactionPayload = {
@@ -216,7 +229,7 @@ export type TFineractTransactionPayload = {
     bankNumber: string;
 };
 
-export type TFineracttransferDeps = {
+export type TFineractTransferDeps = {
     accountId: number;
     transaction: TFineractTransactionPayload;
 };

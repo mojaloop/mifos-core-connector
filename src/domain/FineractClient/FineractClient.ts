@@ -37,7 +37,7 @@ import {
     IFineractClient,
     TCalculateQuoteDeps,
     TCalculateQuoteResponse,
-    TFineracttransferDeps,
+    TFineractTransferDeps,
     TFineractTransactionResponse,
     TFineractTransactionPayload,
     TFineractGetChargeResponse,
@@ -79,7 +79,7 @@ export class FineractClient implements IFineractClient {
 
     async calculateQuote(quoteDeps: TCalculateQuoteDeps): Promise<TCalculateQuoteResponse> {
         // Check this for documentation on charge schema. https://demo.mifos.io/api-docs/apiLive.htm#charges
-        this.logger.info(`Calculating quote for party with account ${quoteDeps.accountNo.toString()}`);
+        this.logger.info(`Calculating quote for party with account ${quoteDeps.accountNo?.toString()}`);
         const charges = await this.getCharges();
 
         let fee = 0;
@@ -107,7 +107,7 @@ export class FineractClient implements IFineractClient {
         return res;
     }
 
-    async receiveTransfer(transferDeps: TFineracttransferDeps): Promise<TFineractTransactionResponse> {
+    async receiveTransfer(transferDeps: TFineractTransferDeps): Promise<THttpResponse<TFineractTransactionResponse>> {
         const accountNo = transferDeps.transaction.accountNumber.toString();
         const amount = transferDeps.transaction.transactionAmount.toString();
         this.logger.info(`Transaction for party with account ${accountNo} worth ${amount}`);
@@ -125,7 +125,7 @@ export class FineractClient implements IFineractClient {
                 },
                 data: transferDeps.transaction,
             });
-            return res.data;
+            return res;
         } catch (error) {
             this.logger.error((error as Error).message);
             throw new FineractDepositFailedError((error as Error).message, 'FIN');
@@ -218,7 +218,7 @@ export class FineractClient implements IFineractClient {
     }
 
     async sendTransfer(
-        transactionPayload: TFineracttransferDeps,
+        transactionPayload: TFineractTransferDeps,
     ): Promise<THttpResponse<TFineractTransactionResponse>> {
         this.logger.info('Request to fineract. Withdraw');
         const url = `${this.fineractConfig.FINERACT_BASE_URL}/${ROUTES.savingsAccount}/${transactionPayload.accountId}/transactions?command=withdraw`;
