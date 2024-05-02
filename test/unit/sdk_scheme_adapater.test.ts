@@ -26,7 +26,11 @@
  ******/
 'use strict';
 
-import { SDKClientFactory, TtransferContinuationRequest, TtransferRequest } from '../../src/domain/SDKClient';
+import {
+    SDKClientFactory,
+    TSDKOutboundTransferRequest,
+    TSDKTransferContinuationRequest,
+} from '../../src/domain/SDKClient';
 import { loggerFactory } from '../../src/infra/logger';
 import { AxiosClientFactory } from '../../src/infra/axiosHttpClient';
 import MockAdapter from 'axios-mock-adapter';
@@ -44,34 +48,31 @@ describe('SDK Scheme Adapter Unit Tests', () => {
         httpClient = AxiosClientFactory.createAxiosClientInstance();
     });
 
-    test('SDK-Scheme Adapter initiate transfer - should pass when given a transfer', async () => {
+    test('SDK-Scheme Adapter initiate receiveTransfer - should pass when given a receiveTransfer', async () => {
         // arrange
-        const transfer: TtransferRequest = {
+        const transfer: TSDKOutboundTransferRequest = {
             homeTransactionId: 'string',
             amount: '0.347',
             amountType: 'SEND',
             currency: 'AED',
             from: {
-                fineractAccountId: '1',
-                payer: {
-                    dateOfBirth: '8477-05-21',
-                    displayName: 'string',
-                    extensionList: [
-                        {
-                            key: 'string',
-                            value: 'string',
-                        },
-                    ],
-                    firstName: 'string',
-                    fspId: 'string',
-                    idSubValue: 'string',
-                    idType: 'MSISDN',
-                    idValue: 'string',
-                    lastName: 'string',
-                    merchantClassificationCode: 'string',
-                    middleName: 'string',
-                    type: 'CONSUMER',
-                },
+                dateOfBirth: '8477-05-21',
+                displayName: 'string',
+                extensionList: [
+                    {
+                        key: 'string',
+                        value: 'string',
+                    },
+                ],
+                firstName: 'string',
+                fspId: 'string',
+                idSubValue: 'string',
+                idType: 'MSISDN',
+                idValue: 'string',
+                lastName: 'string',
+                merchantClassificationCode: 'string',
+                middleName: 'string',
+                type: 'CONSUMER',
             },
             to: {
                 dateOfBirth: '8477-05-21',
@@ -111,9 +112,9 @@ describe('SDK Scheme Adapter Unit Tests', () => {
         expect(res.statusCode).toEqual(200);
     });
 
-    test('SDK Scheme Adapter update transfer - should pass when given an Id and continuation object', async () => {
+    test('SDK Scheme Adapter update receiveTransfer - should pass when given an Id and continuation object', async () => {
         // arrange
-        const continueTransfer: TtransferContinuationRequest = {
+        const continueTransfer: TSDKTransferContinuationRequest = {
             acceptQuote: true,
         };
 

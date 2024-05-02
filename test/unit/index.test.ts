@@ -31,6 +31,7 @@ import { FineractClientFactory } from '../../src/domain/FineractClient';
 import { TFineractConfig } from '../../src/domain/FineractClient/types';
 import { loggerFactory } from '../../src/infra/logger';
 import { CoreConnectorAggregate, TQuoteRequest, TtransferRequest } from '../../src/domain';
+import { SDKClientFactory } from '../../src/domain/SDKClient';
 
 const logger = loggerFactory({ context: 'Mifos Core Connector Tests' });
 const fineractConfig = config.get('fineract') as TFineractConfig;
@@ -41,7 +42,9 @@ const fineractClient = FineractClientFactory.createClient({
     httpClient,
     logger,
 });
-const coreConnectorAggregate = new CoreConnectorAggregate(fineractConfig, fineractClient, logger);
+
+const sdkClient = SDKClientFactory.getSDKClientInstance(logger, httpClient, 'http://localhost:4040');
+const coreConnectorAggregate = new CoreConnectorAggregate(fineractConfig, fineractClient, sdkClient, logger);
 
 const IBAN = 'UG680720000289000000001';
 
@@ -235,7 +238,7 @@ describe('Core Connector Aggregate Unit Tests', () => {
             transferId: randomUUID(),
             transactionRequestId: randomUUID(),
         };
-        const res = await coreConnectorAggregate.transfer(transfer);
+        const res = await coreConnectorAggregate.receiveTransfer(transfer);
         expect(res).toBeTruthy();
     });
 });
