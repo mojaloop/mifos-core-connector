@@ -30,38 +30,23 @@ optionally within square brackets <email>.
 import { Request, ResponseToolkit, ServerRoute } from '@hapi/hapi';
 import OpenAPIBackend, { Context } from 'openapi-backend';
 import { CoreConnectorAggregate } from 'src/domain/coreConnectorAgg';
-import {
-    AccountVerificationError,
-    ILogger,
-    InvalidAccountNumberError,
-    IRoutes,
-    TQuoteRequest,
-    TtransferRequest,
-    UnSupportedIdTypeError,
-} from '../domain';
-import { ResponseValue } from 'hapi';
-import {
-    FineractAccountNotActiveError,
-    FineractAccountNotFoundError,
-    FineractDepositFailedError,
-    FineractGetAccountWithIdError,
-    FineractGetChargesError,
-    FineractGetClientWithIdError,
-    FineractWithdrawFailedError,
-    SearchFineractAccountError,
-} from '../domain/FineractClient';
+import { ILogger, TQuoteRequest, TtransferRequest } from '../domain';
+import { BaseRoutes } from './BaseRoutes';
 
 const API_SPEC_FILE = './src/api-spec/core-connector-api-spec.-sdk.yml';
 
-export class CoreConnectorRoutes implements IRoutes {
+export class CoreConnectorRoutes extends BaseRoutes {
     private readonly aggregate: CoreConnectorAggregate;
     private readonly routes: ServerRoute[] = [];
     private readonly logger: ILogger;
 
     constructor(aggregate: CoreConnectorAggregate, logger: ILogger) {
+        super();
         this.aggregate = aggregate;
         this.logger = logger.child({ context: 'MCC Routes' });
+    }
 
+    async init() {
         // initialise openapi backend with validation
         const api = new OpenAPIBackend({
             definition: API_SPEC_FILE,
@@ -74,7 +59,7 @@ export class CoreConnectorRoutes implements IRoutes {
             },
         });
 
-        api.init(); // todo: remove async method from ctor
+        await api.init();
 
         this.routes.push({
             method: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -131,48 +116,10 @@ export class CoreConnectorRoutes implements IRoutes {
     private async transfers(context: Context, request: Request, h: ResponseToolkit) {
         const transfer = request.payload as TtransferRequest;
         try {
-            const result = await this.aggregate.transfer(transfer);
+            const result = await this.aggregate.receiveTransfer(transfer);
             return this.handleResponse(result, h, 201);
         } catch (error: unknown) {
             return this.handleError(error, h);
-        }
-    }
-
-    private handleResponse(data: unknown, h: ResponseToolkit, statusCode: number = 200) {
-        return h.response(data as ResponseValue).code(statusCode);
-    }
-
-    private handleError(error: unknown, h: ResponseToolkit) {
-        if (error instanceof InvalidAccountNumberError) {
-            h.response({ status: '3101', message: error.message }).code(400);
-        } else if (error instanceof AccountVerificationError) {
-            h.response({
-                status: '3200',
-                message: error.message,
-            }).code(500);
-        } else if (error instanceof UnSupportedIdTypeError) {
-            h.response({
-                status: '3100',
-                message: error.message,
-            }).code(500);
-        } else if (error instanceof FineractWithdrawFailedError) {
-            h.response({ status: '4000', message: error.message }).code(500);
-        } else if (error instanceof SearchFineractAccountError) {
-            h.response({ status: '3200', message: error.message }).code(500);
-        } else if (error instanceof FineractAccountNotFoundError) {
-            h.response({ status: '3200', message: error.message }).code(404);
-        } else if (error instanceof FineractGetAccountWithIdError) {
-            h.response({ status: '4000', message: error.message }).code(500);
-        } else if (error instanceof FineractAccountNotActiveError) {
-            h.response({ status: '4000', message: error.message }).code(500);
-        } else if (error instanceof FineractGetClientWithIdError) {
-            h.response({ status: '4000', message: error.message }).code(500);
-        } else if (error instanceof FineractDepositFailedError) {
-            h.response({ status: '4000', message: error.message }).code(500);
-        } else if (error instanceof FineractGetChargesError) {
-            h.response({ status: '4000', message: error.message }).code(500);
-        } else {
-            h.response({ status: '4000', message: 'Unknown Error' }).code(500);
         }
     }
 }

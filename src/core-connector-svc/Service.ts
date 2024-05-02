@@ -36,13 +36,16 @@ import { CoreConnectorRoutes } from './coreConnectorRoutes';
 import { loggerFactory } from '../infra/logger';
 import { createPlugins } from '../plugins';
 import { FineractClientFactory } from '../domain/FineractClient';
+import { SDKClientFactory } from '../domain/SDKClient';
+import { DFSPCoreConnectorRoutes } from './dfspCoreConnectorRoutes';
 
 const logger = loggerFactory({ context: 'MifosCC' });
 
 export class Service {
     static coreConnectorAggregate: CoreConnectorAggregate;
     static httpClient: IHTTPClient;
-    static server: Server;
+    static sdkServer: Server;
+    static dfspServer: Server;
 
     static async start(httpClient?: IHTTPClient) {
         if (!httpClient) {
@@ -55,24 +58,49 @@ export class Service {
             httpClient: this.httpClient,
             logger: logger,
         });
-        this.coreConnectorAggregate = new CoreConnectorAggregate(fineractConfig, fineractClient, logger);
+
+        const sdkClient = SDKClientFactory.getSDKClientInstance(
+            logger,
+            httpClient,
+            config.get('sdkSchemeAdapter.SDK_BASE_URL') as string,
+        );
+        this.coreConnectorAggregate = new CoreConnectorAggregate(fineractConfig, fineractClient, sdkClient, logger);
 
         await this.setupAndStartUpServer();
         logger.info('Core Connector Server started');
     }
 
     static async setupAndStartUpServer() {
-        this.server = new Server(config.get('server'));
-        await this.server.register(createPlugins({ logger }));
+        this.sdkServer = new Server({
+            host: config.get('server.sdk_server_host'),
+            port: config.get('server.sdk_server_port'),
+        });
+
+        this.dfspServer = new Server({
+            host: config.get('server.dfsp_server_host'),
+            port: config.get('server.dfsp_server_port'),
+        });
+        await this.sdkServer.register(createPlugins({ logger }));
+
+        await this.dfspServer.register(createPlugins({ logger }));
 
         const coreConnectorRoutes = new CoreConnectorRoutes(this.coreConnectorAggregate, logger);
-        this.server.route(coreConnectorRoutes.getRoutes());
-        await this.server.start();
-        logger.info(`Core Connector Server running at ${this.server.info.uri}`);
+        await coreConnectorRoutes.init();
+
+        const dfspCoreConnectorRoutes = new DFSPCoreConnectorRoutes(this.coreConnectorAggregate, logger);
+        await dfspCoreConnectorRoutes.init();
+
+        this.sdkServer.route(coreConnectorRoutes.getRoutes());
+        this.dfspServer.route(dfspCoreConnectorRoutes.getRoutes());
+
+        await this.sdkServer.start();
+        await this.dfspServer.start();
+        logger.info(`Core Connector Server running at ${this.sdkServer.info.uri}`);
+        logger.info(`DFSP Core Connector Server running at ${this.dfspServer.info.uri}`);
     }
 
     static async stop() {
-        await this.server.stop({ timeout: 60 });
+        await this.sdkServer.stop({ timeout: 60 });
         logger.info('Service Stopped');
     }
 }
