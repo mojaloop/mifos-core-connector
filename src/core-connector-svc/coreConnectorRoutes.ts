@@ -30,7 +30,26 @@ optionally within square brackets <email>.
 import { Request, ResponseToolkit, ServerRoute } from '@hapi/hapi';
 import OpenAPIBackend, { Context } from 'openapi-backend';
 import { CoreConnectorAggregate } from 'src/domain/coreConnectorAgg';
-import { ILogger, IRoutes, TQuoteRequest, TtransferRequest } from 'src/domain/interfaces';
+import {
+    AccountVerificationError,
+    ILogger,
+    InvalidAccountNumberError,
+    IRoutes,
+    TQuoteRequest,
+    TtransferRequest,
+    UnSupportedIdTypeError,
+} from '../domain';
+import { ResponseValue } from 'hapi';
+import {
+    FineractAccountNotActiveError,
+    FineractAccountNotFoundError,
+    FineractDepositFailedError,
+    FineractGetAccountWithIdError,
+    FineractGetChargesError,
+    FineractGetClientWithIdError,
+    FineractWithdrawFailedError,
+    SearchFineractAccountError,
+} from '../domain/FineractClient';
 
 const API_SPEC_FILE = './src/api-spec/core-connector-api-spec.-sdk.yml';
 
@@ -89,33 +108,71 @@ export class CoreConnectorRoutes implements IRoutes {
     }
 
     private async getParties(context: Context, request: Request, h: ResponseToolkit) {
-        const { params } = context.request;
-        const IBAN = params['ID'] as string;
-        const result = await this.aggregate.getParties(IBAN);
-        if (!result) {
-            return h.response({ statusCode: '3204', message: 'Party not found' }).code(404);
-        } else {
-            return h.response(result.data).code(200);
+        try {
+            const { params } = context.request;
+            const IBAN = params['ID'] as string;
+            const result = await this.aggregate.getParties(IBAN);
+            return this.handleResponse(result.data, h);
+        } catch (error) {
+            return this.handleError(error, h);
         }
     }
 
     private async quoteRequests(context: Context, request: Request, h: ResponseToolkit) {
-        const quote = request.payload as TQuoteRequest;
-        const result = await this.aggregate.quoterequest(quote);
-        if (!result) {
-            return h.response({ statusCode: '3204', message: 'Quote not found' }).code(404);
-        } else {
-            return h.response(result).code(200);
+        try {
+            const quoteRequest = request.payload as TQuoteRequest;
+            const quote = await this.aggregate.quoteRequest(quoteRequest);
+            return this.handleResponse(quote, h);
+        } catch (error: unknown) {
+            return this.handleError(error, h);
         }
     }
 
     private async transfers(context: Context, request: Request, h: ResponseToolkit) {
         const transfer = request.payload as TtransferRequest;
-        const result = await this.aggregate.transfer(transfer);
-        if (!result) {
-            return h.response({ statusCode: '5000', message: 'Generic Payee error' }).code(500);
+        try {
+            const result = await this.aggregate.transfer(transfer);
+            return this.handleResponse(result, h, 201);
+        } catch (error: unknown) {
+            return this.handleError(error, h);
+        }
+    }
+
+    private handleResponse(data: unknown, h: ResponseToolkit, statusCode: number = 200) {
+        return h.response(data as ResponseValue).code(statusCode);
+    }
+
+    private handleError(error: unknown, h: ResponseToolkit) {
+        if (error instanceof InvalidAccountNumberError) {
+            h.response({ status: '3101', message: error.message }).code(400);
+        } else if (error instanceof AccountVerificationError) {
+            h.response({
+                status: '3200',
+                message: error.message,
+            }).code(500);
+        } else if (error instanceof UnSupportedIdTypeError) {
+            h.response({
+                status: '3100',
+                message: error.message,
+            }).code(500);
+        } else if (error instanceof FineractWithdrawFailedError) {
+            h.response({ status: '4000', message: error.message }).code(500);
+        } else if (error instanceof SearchFineractAccountError) {
+            h.response({ status: '3200', message: error.message }).code(500);
+        } else if (error instanceof FineractAccountNotFoundError) {
+            h.response({ status: '3200', message: error.message }).code(404);
+        } else if (error instanceof FineractGetAccountWithIdError) {
+            h.response({ status: '4000', message: error.message }).code(500);
+        } else if (error instanceof FineractAccountNotActiveError) {
+            h.response({ status: '4000', message: error.message }).code(500);
+        } else if (error instanceof FineractGetClientWithIdError) {
+            h.response({ status: '4000', message: error.message }).code(500);
+        } else if (error instanceof FineractDepositFailedError) {
+            h.response({ status: '4000', message: error.message }).code(500);
+        } else if (error instanceof FineractGetChargesError) {
+            h.response({ status: '4000', message: error.message }).code(500);
         } else {
-            return h.response(result).code(201);
+            h.response({ status: '4000', message: 'Unknown Error' }).code(500);
         }
     }
 }

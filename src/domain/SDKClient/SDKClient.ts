@@ -62,12 +62,12 @@ export class SDKClient implements ISDKClient {
             );
             if (res.statusCode != 200) {
                 this.logger.error('SDKClient initiate transfer failed.', res);
-                throw new SDKClientInitiateTransferError();
+                throw new SDKClientInitiateTransferError('SDKClient initiate transfer failed.', 'SDK');
             }
             return res;
         } catch (error) {
             this.logger.error(error as Error);
-            throw new SDKClientInitiateTransferError();
+            throw new SDKClientInitiateTransferError((error as Error).message, 'SDK');
         }
     }
 
@@ -88,12 +88,12 @@ export class SDKClient implements ISDKClient {
             );
             if (res.statusCode != 200) {
                 this.logger.error('SDKClient initiate update transfer failed.', res);
-                throw new SDKClientInitiateTransferError();
+                throw new SDKClientInitiateTransferError('SDKClient initiate update transfer failed.', 'SDK');
             }
             return res;
         } catch (error) {
             this.logger.error(error as Error);
-            throw new SDKClientContinueTransferError();
+            throw new SDKClientContinueTransferError((error as Error).message, 'SDK');
         }
     }
 }

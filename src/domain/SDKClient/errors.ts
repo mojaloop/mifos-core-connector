@@ -27,6 +27,8 @@
 
 'use strict';
 
-export class SDKClientInitiateTransferError extends Error {}
+import { BaseError } from '../interfaces';
 
-export class SDKClientContinueTransferError extends Error {}
+export class SDKClientInitiateTransferError extends BaseError {}
+
+export class SDKClientContinueTransferError extends BaseError {}

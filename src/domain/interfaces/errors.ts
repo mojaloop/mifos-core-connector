@@ -27,6 +27,20 @@
 
 'use strict';
 
-export * from './types';
-export * from './infrastructure';
-export * from './errors';
+import { ILogger } from './infrastructure';
+import { loggerFactory } from '../../infra/logger';
+
+export class BaseError extends Error {
+    constructor(message: string, context: string) {
+        const logger: ILogger = loggerFactory({ context: context });
+        super(message);
+        logger.error(message);
+        Object.setPrototypeOf(this, new.target.prototype);
+    }
+}
+
+export class InvalidAccountNumberError extends BaseError {}
+
+export class AccountVerificationError extends BaseError {}
+
+export class UnSupportedIdTypeError extends BaseError {}

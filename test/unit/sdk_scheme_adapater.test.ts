@@ -124,4 +124,5 @@ describe('SDK Scheme Adapter Unit Tests', () => {
         // assert
         expect(res.statusCode).toEqual(200);
     });
+    // todo add tests for all failure scenarios
 });

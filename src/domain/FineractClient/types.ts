@@ -45,13 +45,10 @@ export enum FineractLookupStage {
 }
 
 export type TLookupResponseInfo = {
-    data: TFineractGetClientResponse | undefined;
-    message: string;
+    data: TFineractGetClientResponse;
     status: number;
-    stage: FineractLookupStage;
-    currency?: string;
-    accountId?: number;
-    accountStatus?: boolean;
+    currency: string;
+    accountId: number;
 };
 
 export type TAccountEntity = {
@@ -184,10 +181,10 @@ export interface IFineractClient {
     fineractConfig: TFineractConfig;
     httpClient: IHTTPClient;
     logger: ILogger;
-    lookupPartyInfo(accountNo: string): Promise<TLookupResponseInfo | undefined>;
-    calculateQuote(quoteDeps: TCalculateQuoteDeps): Promise<TCalculateQuoteResponse | undefined>;
-    receiveTransfer(transferDeps: TFineracttransferDeps): Promise<TFineractTransactionResponse | undefined>;
-    getAccountFineractIdWithAccountNo(accountNo: string): Promise<TLookupResponseInfo | undefined>;
+    lookupPartyInfo(accountNo: string): Promise<TLookupResponseInfo>;
+    verifyBeneficiary(accountNo: string): Promise<TLookupResponseInfo>;
+    receiveTransfer(transferDeps: TFineracttransferDeps): Promise<TFineractTransactionResponse>;
+    getAccountId(accountNo: string): Promise<TLookupResponseInfo>;
     sendTransfer(transactionPayload: TFineracttransferDeps): Promise<THttpResponse<TFineractTransactionResponse>>;
 }
 
@@ -199,9 +196,13 @@ export type TFineractClientFactoryDeps = {
 
 export type TCalculateQuoteDeps = {
     accountNo: string;
+    amount: number;
 };
 
-export type TCalculateQuoteResponse = TLookupResponseInfo;
+export type TCalculateQuoteResponse = {
+    feeAmount: number;
+    accountNo: string;
+};
 
 export type TFineractTransactionPayload = {
     locale: string;
@@ -232,3 +233,41 @@ export type TFineractTransactionResponse = {
         bankNumber: string;
     };
 };
+
+export type TFineractCharge = {
+    id: number;
+    name: string;
+    active: boolean;
+    penalty: boolean;
+    currency: {
+        code: string;
+        name: string;
+        decimalPlaces: number;
+        displaySymbol: string;
+        nameCode: string;
+        displayLabel: string;
+    };
+    amount: number;
+    chargeTimeType: {
+        id: number;
+        code: string;
+        value: string;
+    };
+    chargeAppliesTo: {
+        id: number;
+        code: string;
+        value: string;
+    };
+    chargeCalculationType: {
+        id: number;
+        code: string;
+        value: string;
+    };
+    chargePaymentMode: {
+        id: number;
+        code: string;
+        value: string;
+    };
+};
+
+export type TFineractGetChargeResponse = TFineractCharge[];

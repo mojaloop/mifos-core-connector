@@ -43,6 +43,9 @@ import {
     TQuoteRequest,
     TtransferResponse,
     TtransferRequest,
+    InvalidAccountNumberError,
+    AccountVerificationError,
+    UnSupportedIdTypeError,
 } from './interfaces';
 
 export class CoreConnectorAggregate {
@@ -59,94 +62,69 @@ export class CoreConnectorAggregate {
         this.logger = logger;
     }
 
-    async getParties(IBAN: string): Promise<TLookupPartyInfoResponse | undefined> {
+    async getParties(IBAN: string): Promise<TLookupPartyInfoResponse> {
         this.logger.info(`Get Parties for IBAN ${IBAN}`);
-        // extract Account No from IBAN
         const accountNo = this.extractAccountFromIBAN(IBAN);
-
         if (accountNo.length < 1) {
-            return;
+            throw new InvalidAccountNumberError(`Account number length is too short`, 'MFCC Agg');
         }
-
-        // Call Fineract to lookup account
         const lookupRes = await this.fineractClient.lookupPartyInfo(accountNo);
-
-        if (!lookupRes || !lookupRes.data) {
-            this.logger.warn(`no lookupPartyInfo by accountNo`, { accountNo });
-            return;
-        }
-
-        if (lookupRes.stage == FineractLookupStage.CLIENT && lookupRes.status == 200 && lookupRes.currency != null) {
-            // todo: move to DTO
-            const party = {
-                data: {
-                    displayName: lookupRes.data.displayName,
-                    firstName: lookupRes.data.firstname,
-                    idType: IdType.IBAN,
-                    idValue: accountNo,
-                    lastName: lookupRes.data.lastname,
-                    middleName: lookupRes.data.firstname,
-                    type: PartyType.CONSUMER,
-                    kycInformation: `${JSON.stringify(lookupRes.data)}`,
-                },
-                statusCode: lookupRes.status,
-            };
-            this.logger.info(`Party found`, { party });
-            return party;
-        } else {
-            return;
-        }
+        const party = {
+            data: {
+                displayName: lookupRes.data.displayName,
+                firstName: lookupRes.data.firstname,
+                idType: IdType.IBAN,
+                idValue: accountNo,
+                lastName: lookupRes.data.lastname,
+                middleName: lookupRes.data.firstname,
+                type: PartyType.CONSUMER,
+                kycInformation: `${JSON.stringify(lookupRes.data)}`,
+            },
+            statusCode: lookupRes.status,
+        };
+        this.logger.info(`Party found`, { party });
+        return party;
     }
 
-    async quoterequest(quoterequest: TQuoteRequest): Promise<TQuoteResponse | undefined> {
-        // Currently fineract currently does not charge for deposits
+    async quoteRequest(quoterequest: TQuoteRequest): Promise<TQuoteResponse> {
         if (quoterequest.to.idType != this.IdType) {
-            throw new Error('Unsupported ID Type');
+            throw new UnSupportedIdTypeError('Unsupported ID Type', 'MFCC Agg');
         }
         this.logger.info(`Get Parties for ${this.IdType} ${quoterequest.to.idValue}`);
         const accountNo = this.extractAccountFromIBAN(quoterequest.to.idValue);
         if (accountNo.length < 1) {
-            return;
+            throw new InvalidAccountNumberError(`Account number length is too short`, 'MFCC Agg');
         }
-
-        const quoteRes = await this.fineractClient.calculateQuote({ accountNo: accountNo });
-
-        if (!quoteRes || !quoteRes.accountStatus) {
-            // todo: add log here
-            return;
-        } else {
-            // todo: move mapping logic to DTO
-            const quoteResponse: TQuoteResponse = {
-                expiration: new Date().toJSON(),
-                payeeFspCommissionAmount: '0',
-                payeeFspCommissionAmountCurrency: quoterequest.currency,
-                payeeFspFeeAmount: '0',
-                payeeFspFeeAmountCurrency: quoterequest.currency,
-                payeeReceiveAmount: quoterequest.amount,
-                payeeReceiveAmountCurrency: quoterequest.currency,
-                quoteId: quoterequest.quoteId,
-                transactionId: quoterequest.transactionId,
-                transferAmount: quoterequest.amount,
-                transferAmountCurrency: quoterequest.currency,
-            };
-            return quoteResponse;
+        const quoteRes = await this.fineractClient.verifyBeneficiary(accountNo);
+        if (quoteRes.status != 200) {
+            throw new AccountVerificationError('Account verification Failed', 'MFCC Agg');
         }
+        const quoteResponse: TQuoteResponse = {
+            expiration: new Date().toJSON(),
+            payeeFspCommissionAmount: '0',
+            payeeFspCommissionAmountCurrency: quoterequest.currency,
+            payeeFspFeeAmount: '0',
+            payeeFspFeeAmountCurrency: quoterequest.currency,
+            payeeReceiveAmount: quoterequest.amount,
+            payeeReceiveAmountCurrency: quoterequest.currency,
+            quoteId: quoterequest.quoteId,
+            transactionId: quoterequest.transactionId,
+            transferAmount: quoterequest.amount,
+            transferAmountCurrency: quoterequest.currency,
+        };
+        return quoteResponse;
     }
 
-    async transfer(transfer: TtransferRequest): Promise<TtransferResponse | undefined> {
+    async transfer(transfer: TtransferRequest): Promise<TtransferResponse> {
         if (transfer.to.idType != this.IdType) {
-            throw new Error('Unsupported ID Type');
+            throw new UnSupportedIdTypeError('Unsupported ID Type', 'MFCC Agg');
         }
         this.logger.info(`Transfer for  ${this.IdType} ${transfer.to.idValue}`);
         const accountNo = this.extractAccountFromIBAN(transfer.to.idValue);
         if (accountNo.length < 1) {
-            return;
+            throw new InvalidAccountNumberError(`Account number length is too short`, 'MFCC Agg');
         }
-
-        const res = await this.fineractClient.getAccountFineractIdWithAccountNo(accountNo);
-        if (!res || res.accountId == null) {
-            return;
-        }
+        const res = await this.fineractClient.getAccountId(accountNo);
         const date = new Date();
         const transaction: TFineractTransactionPayload = {
             locale: this.fineractConfig.FINERACT_LOCALE,
@@ -159,13 +137,10 @@ export class CoreConnectorAggregate {
             receiptNumber: randomUUID(),
             bankNumber: this.fineractConfig.FINERACT_BANK_ID,
         };
-        const transferRes = await this.fineractClient.receiveTransfer({
+        await this.fineractClient.receiveTransfer({
             accountId: res.accountId as number,
             transaction: transaction,
         });
-        if (!transferRes) {
-            return;
-        }
         const transferResponse: TtransferResponse = {
             completedTimestamp: new Date().toJSON(),
             homeTransactionId: transfer.transferId,
