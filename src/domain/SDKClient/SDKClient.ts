@@ -29,10 +29,10 @@
 import {
     ISDKClient,
     TSDKClientDeps,
-    TtransferContinuationRequest,
     TtransferContinuationResponse,
-    TtransferRequest,
-    TtransferResponse,
+    TFineractOutboundTransferResponse,
+    TSDKOutboundTransferRequest,
+    TSDKTransferContinuationRequest,
 } from './types';
 import { IHTTPClient, ILogger, THttpResponse } from '../interfaces';
 import { SDKClientContinueTransferError, SDKClientInitiateTransferError } from './errors';
@@ -48,10 +48,12 @@ export class SDKClient implements ISDKClient {
         this.SDK_SCHEME_ADAPTER_BASE_URL = deps.schemeAdapterUrl;
     }
 
-    async initiateTransfer(transfer: TtransferRequest): Promise<THttpResponse<TtransferResponse>> {
-        this.logger.info('SDKClient initiate transfer %s', transfer);
+    async initiateTransfer(
+        transfer: TSDKOutboundTransferRequest,
+    ): Promise<THttpResponse<TFineractOutboundTransferResponse>> {
+        this.logger.info('SDKClient initiate receiveTransfer %s', transfer);
         try {
-            const res = await this.httpClient.post<TtransferRequest, TtransferResponse>(
+            const res = await this.httpClient.post<TSDKOutboundTransferRequest, TFineractOutboundTransferResponse>(
                 `${this.SDK_SCHEME_ADAPTER_BASE_URL}/transfers`,
                 transfer,
                 {
@@ -61,8 +63,8 @@ export class SDKClient implements ISDKClient {
                 },
             );
             if (res.statusCode != 200) {
-                this.logger.error('SDKClient initiate transfer failed.', res);
-                throw new SDKClientInitiateTransferError('SDKClient initiate transfer failed.', 'SDK');
+                this.logger.error('SDKClient initiate receiveTransfer failed.', res);
+                throw new SDKClientInitiateTransferError('SDKClient initiate receiveTransfer failed.', 'SDK');
             }
             return res;
         } catch (error) {
@@ -72,12 +74,12 @@ export class SDKClient implements ISDKClient {
     }
 
     async updateTransfer(
-        transferAccept: TtransferContinuationRequest,
+        transferAccept: TSDKTransferContinuationRequest,
         id: number,
     ): Promise<THttpResponse<TtransferContinuationResponse>> {
-        this.logger.info('SDKClient initiate update transfer %s', transferAccept);
+        this.logger.info('SDKClient initiate update receiveTransfer %s', transferAccept);
         try {
-            const res = await this.httpClient.put<TtransferContinuationRequest, TtransferContinuationResponse>(
+            const res = await this.httpClient.put<TSDKTransferContinuationRequest, TtransferContinuationResponse>(
                 `${this.SDK_SCHEME_ADAPTER_BASE_URL}/transfers/${id}`,
                 transferAccept,
                 {
@@ -87,8 +89,8 @@ export class SDKClient implements ISDKClient {
                 },
             );
             if (res.statusCode != 200) {
-                this.logger.error('SDKClient initiate update transfer failed.', res);
-                throw new SDKClientInitiateTransferError('SDKClient initiate update transfer failed.', 'SDK');
+                this.logger.error('SDKClient initiate update receiveTransfer failed.', res);
+                throw new SDKClientInitiateTransferError('SDKClient initiate update receiveTransfer failed.', 'SDK');
             }
             return res;
         } catch (error) {

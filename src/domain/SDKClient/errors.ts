@@ -32,3 +32,5 @@ import { BaseError } from '../interfaces';
 export class SDKClientInitiateTransferError extends BaseError {}
 
 export class SDKClientContinueTransferError extends BaseError {}
+
+export class SDKNoQuoteReturnedError extends BaseError {}

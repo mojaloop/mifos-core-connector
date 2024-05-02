@@ -30,12 +30,16 @@ import { SDKSchemeAdapter } from '@mojaloop/api-snippets';
 import { IHTTPClient, ILogger, THttpResponse } from '../interfaces';
 import { components } from '@mojaloop/api-snippets/lib/sdk-scheme-adapter/v2_0_0/outbound/openapi';
 
+export type TSDKSchemeAdapterConfig = {
+    SDK_BASE_URL: string;
+};
+
 export type TFineractTransferParty = {
-    fineractAccountId: string;
+    fineractAccountId: number;
     payer: components['schemas']['transferParty'];
 };
 
-export type TtransferRequest = {
+export type TFineractOutboundTransferRequest = {
     homeTransactionId: string;
     from: TFineractTransferParty;
     to: components['schemas']['transferParty'];
@@ -50,11 +54,34 @@ export type TtransferRequest = {
     skipPartyLookup?: boolean;
 };
 
-export type TtransferResponse = SDKSchemeAdapter.V2_0_0.Outbound.Types.transferResponse;
+export type TSDKOutboundTransferRequest = SDKSchemeAdapter.V2_0_0.Outbound.Types.transferRequest;
 
-export type TtransferContinuationRequest =
+export type TFineractOutboundTransferResponse = {
+    totalAmountFromFineract: number;
+    transferResponse: SDKSchemeAdapter.V2_0_0.Outbound.Types.transferResponse;
+};
+
+export type TFineractTransferContinuationRequest = {
+    transferContinuationAccept:
+        | SDKSchemeAdapter.V2_0_0.Outbound.Types.transferContinuationAcceptParty
+        | SDKSchemeAdapter.V2_0_0.Outbound.Types.transferContinuationAcceptQuote;
+    fineractAccountId: number;
+};
+
+export type TSDKTransferContinuationRequest =
     | SDKSchemeAdapter.V2_0_0.Outbound.Types.transferContinuationAcceptParty
     | SDKSchemeAdapter.V2_0_0.Outbound.Types.transferContinuationAcceptQuote;
+
+export type TUpdateTransferDeps = {
+    fineractTransaction: {
+        fineractAccountId: number | string;
+        totalAmount: number;
+        routingCode: string;
+        receiptNumber: string;
+        bankNumber: string;
+    };
+    sdkTransferId: number | string;
+};
 
 export type TtransferContinuationResponse =
     | SDKSchemeAdapter.V2_0_0.Outbound.Types.transferResponse
@@ -67,9 +94,9 @@ export type TSDKClientDeps = {
 };
 
 export interface ISDKClient {
-    initiateTransfer(transfer: TtransferRequest): Promise<THttpResponse<TtransferResponse>>;
+    initiateTransfer(transfer: TSDKOutboundTransferRequest): Promise<THttpResponse<TFineractOutboundTransferResponse>>;
     updateTransfer(
-        transferAccept: TtransferContinuationRequest,
+        transferAccept: TSDKTransferContinuationRequest,
         id: number,
     ): Promise<THttpResponse<TtransferContinuationResponse>>;
 }
