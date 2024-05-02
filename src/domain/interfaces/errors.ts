@@ -44,3 +44,5 @@ export class InvalidAccountNumberError extends BaseError {}
 export class AccountVerificationError extends BaseError {}
 
 export class UnSupportedIdTypeError extends BaseError {}
+
+export class RefundFailedError extends BaseError {}

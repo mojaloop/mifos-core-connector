@@ -27,7 +27,6 @@
 
 'use strict';
 
-import { ReqRefDefaults, ServerRoute } from '@hapi/hapi/lib/types';
 import { SDKSchemeAdapter } from '@mojaloop/api-snippets';
 import { AxiosRequestConfig, CreateAxiosDefaults } from 'axios';
 import { ILogger } from './infrastructure';
@@ -87,7 +86,3 @@ export type Transfer = {
 };
 
 export type TLookupPartyInfoResponse = THttpResponse<Payee>;
-
-export interface IRoutes {
-    getRoutes(): ServerRoute<ReqRefDefaults>[];
-}
