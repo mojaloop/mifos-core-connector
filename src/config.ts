@@ -1,12 +1,16 @@
 import Convict from 'convict';
 import { IdType, TFineractConfig } from './domain/FineractClient/types';
+import { TSDKSchemeAdapterConfig } from './domain/SDKClient';
 
 interface IConfigSchema {
     fineract: TFineractConfig;
     server: {
-        host: string;
-        port: number;
+        sdk_server_host: string;
+        sdk_server_port: number;
+        dfsp_server_host: string;
+        dfsp_server_port: number;
     };
+    sdkSchemeAdapter: TSDKSchemeAdapterConfig;
 }
 
 // todo: use this config instead of CONFIG
@@ -79,17 +83,37 @@ const config = Convict<IConfigSchema>({
         },
     },
     server: {
-        host: {
-            doc: 'Server host',
+        sdk_server_host: {
+            doc: 'SDK Server host',
             format: String,
             default: null, // required
-            env: 'HOST',
+            env: 'SDK_SERVER_HOST',
         },
-        port: {
-            doc: 'Server port',
+        sdk_server_port: {
+            doc: 'SDK Server port',
             format: Number,
             default: 3000, // optional
-            env: 'PORT',
+            env: 'SDK_SERVER_PORT',
+        },
+        dfsp_server_host: {
+            doc: 'dfsp operations app Server host',
+            format: String,
+            default: null, // required
+            env: 'DFSP_SERVER_HOST',
+        },
+        dfsp_server_port: {
+            doc: 'dfsp operations app Server port',
+            format: Number,
+            default: null, // required
+            env: 'DFSP_SERVER_PORT',
+        },
+    },
+    sdkSchemeAdapter: {
+        SDK_BASE_URL: {
+            doc: 'SDK Scheme Adapter Base URL',
+            format: String,
+            default: null, // required
+            env: 'SDK_BASE_URL',
         },
     },
 });
