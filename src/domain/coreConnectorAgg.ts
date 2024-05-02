@@ -29,7 +29,6 @@
 
 import { randomUUID } from 'crypto';
 import {
-    FineractLookupStage,
     IFineractClient,
     IdType,
     PartyType,

@@ -35,7 +35,6 @@ import {
     TFineractGetAccountResponse,
     TFineractGetClientResponse,
     IFineractClient,
-    FineractLookupStage,
     TCalculateQuoteDeps,
     TCalculateQuoteResponse,
     TFineracttransferDeps,
