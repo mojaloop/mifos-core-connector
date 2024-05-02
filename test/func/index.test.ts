@@ -38,7 +38,7 @@ jest.setTimeout(1000000); // why do we need such timeout?
 const logger = loggerFactory({ context: 'Core Connector Tests' });
 const IBAN = 'SK680720000289000000002';
 const IdType = 'IBAN';
-const baseurl = `http://${config.get('server').host}:${config.get('server').port}`;
+const baseurl = `http://${config.get('server').sdk_server_host}:${config.get('server').sdk_server_port}`;
 
 // todo: why do we copy-paste the same code from CoreConnectorAggregate.extractAccountFromIBAN
 function extractAccountFromIBAN(IBAN: string): string {
