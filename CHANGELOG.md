@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.1.0](https://github.com/mojaloop/mifos-core-connector/compare/v0.0.12...v1.1.0) (2024-04-12)
+
+
+### Features
+
+* code quality enhancements ([5a84f76](https://github.com/mojaloop/mifos-core-connector/commit/5a84f76f2f2fc675094c4217b6a38b3f17fb9973))
+
+
+### Bug Fixes
+
+* fixed failing test cases ([6d105ee](https://github.com/mojaloop/mifos-core-connector/commit/6d105eec27d0c142c94bf5b1958f70bff7fb4a86))
+
 ### [0.0.12](https://github.com/mojaloop/mifos-core-connector/compare/v0.0.11...v0.0.12) (2024-03-25)
 
 
