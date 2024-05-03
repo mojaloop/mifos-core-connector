@@ -51,6 +51,8 @@ export class DFSPCoreConnectorRoutes extends BaseRoutes {
         const api = new OpenAPIBackend({
             definition: API_SPEC_FILE,
             handlers: {
+                transfers: this.initiateTransfer,
+                updateTransfer: this.updateInitiatedTransfer,
                 validationFail: async (context, req, h) => h.response({ error: context.validation.errors }).code(400),
                 notFound: async (context, req, h) => h.response({ error: 'Not found' }).code(404),
             },

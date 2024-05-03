@@ -38,7 +38,9 @@ jest.setTimeout(1000000); // why do we need such timeout?
 const logger = loggerFactory({ context: 'Core Connector Tests' });
 const IBAN = 'SK680720000289000000002';
 const IdType = 'IBAN';
+
 const baseurl = `http://${config.get('server').sdk_server_host}:${config.get('server').sdk_server_port}`;
+const dfsp_baseurl = `http://${config.get('server').dfsp_server_host}:${config.get('server').dfsp_server_port}`;
 
 // todo: why do we copy-paste the same code from CoreConnectorAggregate.extractAccountFromIBAN
 function extractAccountFromIBAN(IBAN: string): string {
@@ -257,5 +259,13 @@ describe('Mifos Core Connector Functional Tests', () => {
             },
         });
         expect(res.status).toEqual(201);
+    });
+
+    test('GET /health Should return 200', async () => {
+        const url = `${dfsp_baseurl}/health`;
+        const res = await axios.get(url);
+        logger.info(res.data);
+
+        expect(res.status).toEqual(200);
     });
 });

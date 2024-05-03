@@ -101,6 +101,7 @@ export class Service {
 
     static async stop() {
         await this.sdkServer.stop({ timeout: 60 });
+        await this.dfspServer.stop({ timeout: 60 });
         logger.info('Service Stopped');
     }
 }
