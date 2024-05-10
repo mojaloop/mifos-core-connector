@@ -32,7 +32,7 @@ import { randomUUID } from 'crypto';
 import { Service } from '../../src/core-connector-svc';
 import config from '../../src/config';
 import { loggerFactory } from '../../src/infra/logger';
-import { TQuoteRequest, TtransferRequest } from '../../src/domain/interfaces';
+import { TQuoteRequest, TtransferRequest } from '../../src/domain';
 import { TFineractOutboundTransferRequest, TFineractTransferContinuationRequest } from '../../src/domain/SDKClient';
 
 const logger = loggerFactory({ context: 'Core Connector Tests' });
