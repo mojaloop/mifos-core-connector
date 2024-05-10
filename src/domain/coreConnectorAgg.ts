@@ -50,6 +50,7 @@ import {
 } from './interfaces';
 import {
     ISDKClient,
+    SDKClientContinueTransferError,
     SDKClientInitiateTransferError,
     SDKNoQuoteReturnedError,
     TFineractOutboundTransferRequest,
@@ -62,6 +63,7 @@ import {
     FineractGetAccountWithIdError,
     FineractAccountInsufficientBalance,
     FineractWithdrawFailedError,
+    SearchFineractAccountError,
 } from './FineractClient';
 
 export class CoreConnectorAggregate {
@@ -103,12 +105,12 @@ export class CoreConnectorAggregate {
         return party;
     }
 
-    async quoteRequest(quoterequest: TQuoteRequest): Promise<TQuoteResponse> {
-        if (quoterequest.to.idType != this.IdType) {
+    async quoteRequest(quoteRequest: TQuoteRequest): Promise<TQuoteResponse> {
+        if (quoteRequest.to.idType != this.IdType) {
             throw new UnSupportedIdTypeError('Unsupported ID Type', 'MFCC Agg');
         }
-        this.logger.info(`Get Parties for ${this.IdType} ${quoterequest.to.idValue}`);
-        const accountNo = this.extractAccountFromIBAN(quoterequest.to.idValue);
+        this.logger.info(`Get Parties for ${this.IdType} ${quoteRequest.to.idValue}`);
+        const accountNo = this.extractAccountFromIBAN(quoteRequest.to.idValue);
         if (accountNo.length < 1) {
             throw new InvalidAccountNumberError(`Account number length is too short`, 'MFCC Agg');
         }
@@ -116,20 +118,20 @@ export class CoreConnectorAggregate {
         if (quoteRes.status != 200) {
             throw new AccountVerificationError('Account verification Failed', 'MFCC Agg');
         }
-        const quoteResponse: TQuoteResponse = {
+
+        return {
             expiration: new Date().toJSON(),
             payeeFspCommissionAmount: '0',
-            payeeFspCommissionAmountCurrency: quoterequest.currency,
+            payeeFspCommissionAmountCurrency: quoteRequest.currency,
             payeeFspFeeAmount: '0',
-            payeeFspFeeAmountCurrency: quoterequest.currency,
-            payeeReceiveAmount: quoterequest.amount,
-            payeeReceiveAmountCurrency: quoterequest.currency,
-            quoteId: quoterequest.quoteId,
-            transactionId: quoterequest.transactionId,
-            transferAmount: quoterequest.amount,
-            transferAmountCurrency: quoterequest.currency,
+            payeeFspFeeAmountCurrency: quoteRequest.currency,
+            payeeReceiveAmount: quoteRequest.amount,
+            payeeReceiveAmountCurrency: quoteRequest.currency,
+            quoteId: quoteRequest.quoteId,
+            transactionId: quoteRequest.transactionId,
+            transferAmount: quoteRequest.amount,
+            transferAmountCurrency: quoteRequest.currency,
         };
-        return quoteResponse;
     }
 
     async receiveTransfer(transfer: TtransferRequest): Promise<TtransferResponse> {
@@ -181,14 +183,14 @@ export class CoreConnectorAggregate {
                 `Transfer initiation failed with status code ${transferRes.statusCode}`,
                 'MFCC Agg',
             );
-        } else if (!transferRes.data.transferResponse.quoteResponse) {
+        } else if (!transferRes.data.quoteResponse) {
             throw new SDKNoQuoteReturnedError('Quote response is not defined', 'MFCC Agg');
         }
-        const totalFineractFee = await this.fineractClient.calculateQuote({
+        const totalFineractFee = await this.fineractClient.calculateWithdrawQuote({
             amount: this.getAmountSum([
-                parseFloat(transferRes.data.transferResponse.amount),
-                parseFloat(transferRes.data.transferResponse.quoteResponse.body.payeeFspFee?.amount as string),
-                parseFloat(transferRes.data.transferResponse.quoteResponse.body.payeeFspCommission?.amount as string),
+                parseFloat(transferRes.data.amount),
+                parseFloat(transferRes.data.quoteResponse.body.payeeFspFee?.amount as string),
+                parseFloat(transferRes.data.quoteResponse.body.payeeFspCommission?.amount as string),
             ]),
         });
         if (!this.checkAccountBalance(totalFineractFee.feeAmount, account.data.summary.availableBalance)) {
@@ -200,7 +202,7 @@ export class CoreConnectorAggregate {
 
         return {
             totalAmountFromFineract: totalFineractFee.feeAmount,
-            transferResponse: transferRes.data.transferResponse,
+            transferResponse: transferRes.data,
         };
     }
 
@@ -208,9 +210,17 @@ export class CoreConnectorAggregate {
         this.logger.info(
             `Continuing transfer with id ${transferAccept.sdkTransferId} and account with id ${transferAccept.fineractTransaction.fineractAccountId}`,
         );
-        const account = await this.fineractClient.getSavingsAccount(
+        const accountRes = await this.fineractClient.getSavingsAccount(
             transferAccept.fineractTransaction.fineractAccountId as number,
         );
+
+        if (accountRes.statusCode != 200) {
+            throw new SearchFineractAccountError(
+                `Search for Account failed with status code ${accountRes.statusCode}`,
+                'MFCC Agg',
+            );
+        }
+
         const date = new Date();
         const transaction: TFineractTransferDeps = {
             accountId: transferAccept.fineractTransaction.fineractAccountId as number,
@@ -220,7 +230,7 @@ export class CoreConnectorAggregate {
                 transactionDate: `${date.getDate()} ${date.getMonth() + 1} ${date.getFullYear()}`,
                 transactionAmount: transferAccept.fineractTransaction.totalAmount.toString(),
                 paymentTypeId: '1',
-                accountNumber: account.data.accountNo,
+                accountNumber: accountRes.data.accountNo,
                 routingCode: transferAccept.fineractTransaction.routingCode,
                 receiptNumber: transferAccept.fineractTransaction.receiptNumber,
                 bankNumber: transferAccept.fineractTransaction.bankNumber,
@@ -234,33 +244,46 @@ export class CoreConnectorAggregate {
             );
         }
 
-        const updateTransferRes = await this.sdkClient.updateTransfer(
-            { acceptQuote: true },
-            transferAccept.sdkTransferId as number,
-        );
-        if (updateTransferRes.statusCode != 200) {
-            this.logger.error('Initiate update Transfer failed.', updateTransferRes);
-            const depositRes = await this.fineractClient.receiveTransfer(transaction);
-            if (depositRes.statusCode != 200) {
-                throw new RefundFailedError(
-                    `Refund of ${transferAccept.fineractTransaction.totalAmount} failed for account with id ${transferAccept.fineractTransaction.fineractAccountId}`,
+        try {
+            const updateTransferRes = await this.sdkClient.updateTransfer(
+                { acceptQuote: true },
+                transferAccept.sdkTransferId as number,
+            );
+            if (updateTransferRes.statusCode != 200) {
+                this.logger.error('Initiate update Transfer failed.', updateTransferRes);
+                throw new SDKClientContinueTransferError(
+                    'SDKClient initiate update receiveTransfer failed.',
                     'MFCC Agg',
                 );
             }
-            throw new SDKClientInitiateTransferError('SDKClient initiate update receiveTransfer failed.', 'MFCC Agg');
+            return updateTransferRes.data;
+        } catch (error) {
+            if (error instanceof SDKClientContinueTransferError) {
+                //Refund the money
+                const depositRes = await this.fineractClient.receiveTransfer(transaction);
+                if (depositRes.statusCode != 200) {
+                    throw new RefundFailedError({
+                        message: `Refund of ${transferAccept.fineractTransaction.totalAmount} failed for account with id ${transferAccept.fineractTransaction.fineractAccountId}`,
+                        context: 'MFCC Agg',
+                        refundDetails: {
+                            amount: parseFloat(transaction.transaction.transactionAmount),
+                            fineractAccountId: transaction.accountId,
+                        },
+                    });
+                }
+            }
+            throw new SDKClientContinueTransferError('SDKClient initiate update receiveTransfer failed.', 'MFCC Agg');
         }
-        return updateTransferRes.data;
     }
 
     extractAccountFromIBAN(IBAN: string): string {
         // todo think how to validate account numbers
-        const accountNo = IBAN.slice(
+        return IBAN.slice(
             this.fineractConfig.FINERACT_BANK_COUNTRY_CODE.length +
                 this.fineractConfig.FINERACT_CHECK_DIGITS.length +
                 this.fineractConfig.FINERACT_BANK_ID.length +
                 this.fineractConfig.FINERACT_ACCOUNT_PREFIX.length,
         );
-        return accountNo;
     }
 
     private getSDKTransferRequest(transfer: TFineractOutboundTransferRequest): TSDKOutboundTransferRequest {
@@ -289,6 +312,6 @@ export class CoreConnectorAggregate {
     }
 
     private checkAccountBalance(totalAmount: number, accountBalance: number): boolean {
-        return totalAmount > accountBalance;
+        return accountBalance > totalAmount;
     }
 }

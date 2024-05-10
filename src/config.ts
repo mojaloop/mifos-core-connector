@@ -5,10 +5,10 @@ import { TSDKSchemeAdapterConfig } from './domain/SDKClient';
 interface IConfigSchema {
     fineract: TFineractConfig;
     server: {
-        sdk_server_host: string;
-        sdk_server_port: number;
-        dfsp_server_host: string;
-        dfsp_server_port: number;
+        SDK_SERVER_HOST: string;
+        SDK_SERVER_PORT: number;
+        DFSP_SERVER_HOST: string;
+        DFSP_SERVER_PORT: number;
     };
     sdkSchemeAdapter: TSDKSchemeAdapterConfig;
 }
@@ -83,25 +83,25 @@ const config = Convict<IConfigSchema>({
         },
     },
     server: {
-        sdk_server_host: {
+        SDK_SERVER_HOST: {
             doc: 'SDK Server host',
             format: String,
             default: null, // required
             env: 'SDK_SERVER_HOST',
         },
-        sdk_server_port: {
+        SDK_SERVER_PORT: {
             doc: 'SDK Server port',
             format: Number,
             default: 3000, // optional
             env: 'SDK_SERVER_PORT',
         },
-        dfsp_server_host: {
-            doc: 'dfsp operations app Server host',
+        DFSP_SERVER_HOST: {
+            doc: 'DFSP operations app Server host',
             format: String,
             default: null, // required
             env: 'DFSP_SERVER_HOST',
         },
-        dfsp_server_port: {
+        DFSP_SERVER_PORT: {
             doc: 'dfsp operations app Server port',
             format: Number,
             default: null, // required
