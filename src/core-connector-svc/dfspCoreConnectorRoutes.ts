@@ -30,7 +30,7 @@
 import { CoreConnectorAggregate, ILogger } from '../domain';
 import { Request, ResponseToolkit, ServerRoute } from '@hapi/hapi';
 import OpenAPIBackend, { Context } from 'openapi-backend';
-import { TFineractOutboundTransferRequest, TUpdateTransferDeps } from '../domain/SDKClient';
+import { TFineractOutboundTransferRequest, TFineractTransferContinuationRequest } from '../domain/SDKClient';
 import { BaseRoutes } from './BaseRoutes';
 
 const API_SPEC_FILE = './src/api-spec/core-connector-api-spec-dfsp.yml';
@@ -47,18 +47,17 @@ export class DFSPCoreConnectorRoutes extends BaseRoutes {
     }
 
     async init() {
-        // initialise openapi backend with validation
         const api = new OpenAPIBackend({
             definition: API_SPEC_FILE,
             handlers: {
-                transfers: this.initiateTransfer,
-                updateTransfer: this.updateInitiatedTransfer,
+                transfers: this.initiateTransfer.bind(this),
+                updateTransfer: this.updateInitiatedTransfer.bind(this),
                 validationFail: async (context, req, h) => h.response({ error: context.validation.errors }).code(400),
                 notFound: async (context, req, h) => h.response({ error: 'Not found' }).code(404),
             },
         });
 
-        await api.init(); // todo: remove async method from ctor
+        await api.init();
 
         this.routes.push({
             method: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -102,9 +101,13 @@ export class DFSPCoreConnectorRoutes extends BaseRoutes {
     }
 
     private async updateInitiatedTransfer(context: Context, request: Request, h: ResponseToolkit) {
-        const transferAccept = request.payload as TUpdateTransferDeps;
+        const { params } = context.request;
+        const transferAccept = request.payload as TFineractTransferContinuationRequest;
         try {
-            const updateTransferRes = await this.aggregate.updateSentTransfer(transferAccept);
+            const updateTransferRes = await this.aggregate.updateSentTransfer({
+                fineractTransaction: transferAccept.fineractTransaction,
+                sdkTransferId: params.transferId as string,
+            });
             return this.handleResponse(updateTransferRes, h);
         } catch (error: unknown) {
             return this.handleError(error, h);

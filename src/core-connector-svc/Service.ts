@@ -72,13 +72,13 @@ export class Service {
 
     static async setupAndStartUpServer() {
         this.sdkServer = new Server({
-            host: config.get('server.sdk_server_host'),
-            port: config.get('server.sdk_server_port'),
+            host: config.get('server.SDK_SERVER_HOST'),
+            port: config.get('server.SDK_SERVER_PORT'),
         });
 
         this.dfspServer = new Server({
-            host: config.get('server.dfsp_server_host'),
-            port: config.get('server.dfsp_server_port'),
+            host: config.get('server.DFSP_SERVER_HOST'),
+            port: config.get('server.DFSP_SERVER_PORT'),
         });
         await this.sdkServer.register(createPlugins({ logger }));
 
@@ -95,7 +95,7 @@ export class Service {
 
         await this.sdkServer.start();
         await this.dfspServer.start();
-        logger.info(`Core Connector Server running at ${this.sdkServer.info.uri}`);
+        logger.info(`SDK Core Connector Server running at ${this.sdkServer.info.uri}`);
         logger.info(`DFSP Core Connector Server running at ${this.dfspServer.info.uri}`);
     }
 
