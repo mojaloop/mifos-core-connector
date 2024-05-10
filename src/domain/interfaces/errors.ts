@@ -29,6 +29,7 @@
 
 import { ILogger } from './infrastructure';
 import { loggerFactory } from '../../infra/logger';
+import { TRefundErrorDeps } from '../FineractClient';
 
 export class BaseError extends Error {
     constructor(message: string, context: string) {
@@ -45,4 +46,14 @@ export class AccountVerificationError extends BaseError {}
 
 export class UnSupportedIdTypeError extends BaseError {}
 
-export class RefundFailedError extends BaseError {}
+export class RefundFailedError extends BaseError {
+    readonly refundDetails: {
+        amount: number;
+        fineractAccountId: number;
+    };
+    constructor(deps: TRefundErrorDeps) {
+        super(deps.message, deps.context);
+        this.refundDetails = deps.refundDetails;
+        Object.setPrototypeOf(this, new.target.prototype);
+    }
+}
