@@ -89,13 +89,6 @@
       "additionalApi": true
     },
     {
-      "type": "core-connector-api-spec",
-      "version": "0.1",
-      "folderPath": "core-connector-api-spec_0.1",
-      "asynchronous": false,
-      "additionalApi": true
-    },
-    {
       "type": "fineract",
       "version": "1.1",
       "folderPath": "fineract_1.1",
@@ -106,6 +99,28 @@
       "type": "sdk-scheme-adapter-outbound-v2_0_0-openapi3-snippets",
       "version": "1.0",
       "folderPath": "sdk-scheme-adapter-outbound-v2_0_0-openapi3-snippets_1.0",
+      "asynchronous": false,
+      "additionalApi": true
+    },
+    {
+      "type": "sdk-outbound-openapi: 3",
+      "version": "1.0",
+      "folderPath": "sdk-outbound-openapi: 3_1.0",
+      "asynchronous": false,
+      "additionalApi": true,
+      "prefix": "/sdk-out-bound"
+    },
+    {
+      "type": "core-connector-api-spec-dfsp",
+      "version": "0.1",
+      "folderPath": "core-connector-api-spec-dfsp_0.1",
+      "asynchronous": false,
+      "additionalApi": true
+    },
+    {
+      "type": "core-connector-api-spec-sdk",
+      "version": "0.1",
+      "folderPath": "core-connector-api-spec-sdk_0.1",
       "asynchronous": false,
       "additionalApi": true
     }

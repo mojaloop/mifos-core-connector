@@ -52,5 +52,61 @@ describe('fineract_client', () => {
         await expect(account).rejects.toThrow();
     });
 
-    //todo add test cases for all functions and all failure scenarios
+    test('fineract client - test perform account lookup. Should pass if account exists should pass', async () => {
+        const res = await fineractClient.lookupPartyInfo('000000001');
+        expect(res.data.accountNo).toContain('000000005');
+    });
+
+    test('fineract client - test calculate quote - should pass with correct dependencies', async () => {
+        const res = fineractClient.calculateWithdrawQuote({
+            amount: 200,
+        });
+
+        await expect(res).resolves;
+    });
+
+    test('fineract client - test verify beneficiary - should pass with valid beneficiary account', async () => {
+        const res = await fineractClient.verifyBeneficiary('000000001');
+
+        expect(res.data.accountNo).toEqual('000000005');
+    });
+
+    test('fineract client - test recieve payment - should pass with properly configure transaction', async () => {
+        const date = new Date();
+        const res = await fineractClient.receiveTransfer({
+            accountId: 1,
+            transaction: {
+                locale: 'en',
+                dateFormat: 'dd MM yy',
+                transactionDate: `${date.getDate()} ${date.getMonth() + 1} ${date.getFullYear()}`,
+                transactionAmount: '1000',
+                paymentTypeId: '1',
+                accountNumber: '000000001',
+                routingCode: 'ROUT124',
+                receiptNumber: '5672',
+                bankNumber: 'BNK273',
+            },
+        });
+        expect(res.statusCode).toEqual(200);
+    });
+
+    test('fineract client - test send transfer : should pass with properly configured transfer', async () => {
+        const date = new Date();
+        const res = await fineractClient.sendTransfer({
+            accountId: 2,
+            transaction: {
+                locale: 'en',
+                dateFormat: 'dd MM yy',
+                transactionDate: `${date.getDate()} ${date.getMonth() + 1} ${date.getFullYear()}`,
+                transactionAmount: '1000',
+                paymentTypeId: '1',
+                accountNumber: '000000002',
+                routingCode: 'ROUT124',
+                receiptNumber: '5672',
+                bankNumber: 'BNK273',
+            },
+        });
+
+        expect(res.statusCode).toEqual(200);
+    });
 });

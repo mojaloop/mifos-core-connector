@@ -33,25 +33,14 @@ import { Service } from '../../src/core-connector-svc';
 import config from '../../src/config';
 import { loggerFactory } from '../../src/infra/logger';
 import { TQuoteRequest, TtransferRequest } from '../../src/domain/interfaces';
+import { TFineractOutboundTransferRequest, TFineractTransferContinuationRequest } from '../../src/domain/SDKClient';
 
-jest.setTimeout(1000000); // why do we need such timeout?
 const logger = loggerFactory({ context: 'Core Connector Tests' });
 const IBAN = 'SK680720000289000000002';
 const IdType = 'IBAN';
 
-const baseurl = `http://${config.get('server').sdk_server_host}:${config.get('server').sdk_server_port}`;
-const dfsp_baseurl = `http://${config.get('server').dfsp_server_host}:${config.get('server').dfsp_server_port}`;
-
-// todo: why do we copy-paste the same code from CoreConnectorAggregate.extractAccountFromIBAN
-function extractAccountFromIBAN(IBAN: string): string {
-    const accountNo = IBAN.slice(
-        (config.get('fineract').FINERACT_BANK_COUNTRY_CODE as string).length +
-            (config.get('fineract').FINERACT_CHECK_DIGITS as string).length +
-            (config.get('fineract').FINERACT_BANK_ID as string).length +
-            config.get('fineract').FINERACT_ACCOUNT_PREFIX.length,
-    );
-    return accountNo;
-}
+const baseurl = `http://${config.get('server').SDK_SERVER_HOST}:${config.get('server').SDK_SERVER_PORT}`;
+const dfsp_baseurl = `http://${config.get('server').DFSP_SERVER_HOST}:${config.get('server').DFSP_SERVER_PORT}`;
 
 describe('Mifos Core Connector Functional Tests', () => {
     beforeAll(async () => {
@@ -62,15 +51,15 @@ describe('Mifos Core Connector Functional Tests', () => {
         await Service.stop();
     });
 
-    test('GET /parties/IBAN/{ID} Should return party info if it exists in fineract', async () => {
+    test('GET /parties/IBAN/{ID}: sdk-server - Should return party info if it exists in fineract', async () => {
         const url = `${baseurl}/parties/IBAN/${IBAN}`;
         const res = await axios.get(url);
         logger.info(res.data);
 
-        expect(res.data['idValue']).toEqual(extractAccountFromIBAN(IBAN));
+        expect(res.data['idValue']).toEqual('000000002');
     });
 
-    test('POST /quoterequests Should return quote if party info exists', async () => {
+    test('POST /quoterequests: sdk-server - Should return quote if party info exists', async () => {
         const quoteRequest: TQuoteRequest = {
             homeR2PTransactionId: 'string',
             amount: '5.6',
@@ -145,7 +134,7 @@ describe('Mifos Core Connector Functional Tests', () => {
         expect(res.status).toEqual(200);
     });
 
-    test('POST /transfers Should return receiveTransfer if party in fineract', async () => {
+    test('POST /transfers: sdk-server - Should return receiveTransfer if party in fineract', async () => {
         const transfer: TtransferRequest = {
             homeR2PTransactionId: 'string',
             amount: '500',
@@ -266,6 +255,97 @@ describe('Mifos Core Connector Functional Tests', () => {
         const res = await axios.get(url);
         logger.info(res.data);
 
+        expect(res.status).toEqual(200);
+    });
+
+    test('POST /transfers: dfsp server - Should return 200', async () => {
+        const url = `${dfsp_baseurl}/transfers`;
+        const transferRequest: TFineractOutboundTransferRequest = {
+            homeTransactionId: 'string',
+            amount: '100',
+            amountType: 'SEND',
+            currency: 'AED',
+            from: {
+                fineractAccountId: 1,
+                payer: {
+                    dateOfBirth: '8477-05-21',
+                    displayName: 'string',
+                    extensionList: [
+                        {
+                            key: 'string',
+                            value: 'string',
+                        },
+                    ],
+                    firstName: 'string',
+                    fspId: 'string',
+                    idSubValue: 'string',
+                    idType: 'IBAN',
+                    idValue: 'string',
+                    lastName: 'string',
+                    merchantClassificationCode: '1234',
+                    middleName: 'string',
+                    type: 'CONSUMER',
+                },
+            },
+            to: {
+                dateOfBirth: '8477-05-21',
+                displayName: 'string',
+                extensionList: [
+                    {
+                        key: 'string',
+                        value: 'string',
+                    },
+                ],
+                firstName: 'string',
+                fspId: 'string',
+                idSubValue: 'string',
+                idType: 'MSISDN',
+                idValue: 'string',
+                lastName: 'string',
+                merchantClassificationCode: '1234',
+                middleName: 'string',
+                type: 'CONSUMER',
+            },
+            note: 'string',
+            quoteRequestExtensions: [
+                {
+                    key: 'string',
+                    value: 'string',
+                },
+            ],
+            subScenario: 'HELLO',
+            transactionType: 'TRANSFER',
+        };
+
+        const res = await axios.post(url, JSON.stringify(transferRequest), {
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        expect(res.status).toEqual(200);
+    });
+
+    test('POST /transfers/{transferId}: dfsp server - Should return 200 with structurally compliant body', async () => {
+        const url = `${dfsp_baseurl}/transfers/38b7313b-2be4-418d-8164-b32c989f0ee1`;
+        const transferContinuationBody: TFineractTransferContinuationRequest = {
+            fineractTransaction: {
+                fineractAccountId: 2,
+                totalAmount: 50.0,
+                routingCode: 'routing123',
+                receiptNumber: '1',
+                bankNumber: 'BNK123',
+            },
+            transferContinuationAccept: {
+                acceptQuote: true,
+            },
+        };
+
+        const res = await axios.put(url, JSON.stringify(transferContinuationBody), {
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
         expect(res.status).toEqual(200);
     });
 });

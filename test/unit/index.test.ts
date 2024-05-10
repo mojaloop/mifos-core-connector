@@ -61,7 +61,7 @@ describe('Core Connector Aggregate Unit Tests', () => {
         await expect(res).rejects.toThrow();
     });
 
-    test('Aggregate Qoute Request. Should return if account is active ', async () => {
+    test('Aggregate Qoute Request for withdraw. Should pass if account is active ', async () => {
         const quoteRequest: TQuoteRequest = {
             homeR2PTransactionId: 'string',
             amount: '5.6',
