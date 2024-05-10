@@ -73,13 +73,12 @@ export class FineractClient implements IFineractClient {
 
     async lookupPartyInfo(accountNo: string): Promise<TLookupResponseInfo> {
         this.logger.info(`Looking up party with account ${accountNo}`);
-        const res = await this.getAccountId(accountNo);
-        return res;
+        return await this.getAccountId(accountNo);
     }
 
-    async calculateQuote(quoteDeps: TCalculateQuoteDeps): Promise<TCalculateQuoteResponse> {
+    async calculateWithdrawQuote(quoteDeps: TCalculateQuoteDeps): Promise<TCalculateQuoteResponse> {
         // Check this for documentation on charge schema. https://demo.mifos.io/api-docs/apiLive.htm#charges
-        this.logger.info(`Calculating quote for party with account ${quoteDeps.accountNo?.toString()}`);
+        this.logger.info(`Calculating quote `);
         const charges = await this.getCharges();
 
         let fee = 0;
@@ -96,15 +95,13 @@ export class FineractClient implements IFineractClient {
 
         return {
             feeAmount: fee,
-            accountNo: quoteDeps.accountNo,
         };
     }
 
     async verifyBeneficiary(accountNo: string): Promise<TLookupResponseInfo> {
         // Fineract has no fees for deposits. Only calculating for withdraws.
         this.logger.info(`Calculating quote for party with account ${accountNo}`);
-        const res = this.getAccountId(accountNo);
-        return res;
+        return await this.getAccountId(accountNo);
     }
 
     async receiveTransfer(transferDeps: TFineractTransferDeps): Promise<THttpResponse<TFineractTransactionResponse>> {
@@ -115,17 +112,15 @@ export class FineractClient implements IFineractClient {
         try {
             const url = `${this.fineractConfig.FINERACT_BASE_URL}/${ROUTES.savingsAccount}/${transferDeps.accountId}/transactions?command=deposit`;
             this.logger.info(`Request to fineract ${url}`);
-            const res = await this.httpClient.send<TFineractTransactionResponse>({
+            return await this.httpClient.send<TFineractTransactionResponse>({
                 url: url,
                 method: 'POST',
                 headers: {
-                    'fineract-platform-tenantId': this.fineractConfig.FINERACT_TENANT_ID,
-                    Authorization: this.getAuthHeader(),
+                    ...this.getDefaultHeaders(),
                     'Content-Type': 'application/json',
                 },
                 data: transferDeps.transaction,
             });
-            return res;
         } catch (error) {
             this.logger.error((error as Error).message);
             throw new FineractDepositFailedError((error as Error).message, 'FIN');
@@ -133,6 +128,7 @@ export class FineractClient implements IFineractClient {
     }
 
     async getAccountId(accountNo: string): Promise<TLookupResponseInfo> {
+        this.logger.info(`Searching for Account with account number ${accountNo}`);
         const res = await this.searchAccount(accountNo);
         if (res.statusCode != 200) {
             throw new SearchFineractAccountError('Search for Account Failed', 'FIN');
@@ -160,40 +156,45 @@ export class FineractClient implements IFineractClient {
                 'FIN',
             );
         }
-        return {
+        const lookUpRes = {
             accountId: returnedEntity.entityId,
             data: getClientRes.data,
             status: getClientRes.statusCode,
             currency: currency,
         };
+        this.logger.info(`Client details found ${lookUpRes}`);
+        return lookUpRes;
     }
 
     private async searchAccount(accountNo: string): Promise<THttpResponse<TFineractSearchResponse>> {
         const url = `${this.fineractConfig.FINERACT_BASE_URL}/${ROUTES.search}?query=${accountNo}&resource=savingsaccount`;
         this.logger.info(`Request to fineract ${url}`);
-        const res = await this.httpClient.send<TFineractSearchResponse>({
+        return await this.httpClient.send<TFineractSearchResponse>({
             url: url,
             method: 'GET',
             headers: {
-                'fineract-platform-tenantId': this.fineractConfig.FINERACT_TENANT_ID,
-                Authorization: this.getAuthHeader(),
+                ...this.getDefaultHeaders(),
             },
         });
-        return res;
     }
 
     async getSavingsAccount(accountId: number): Promise<THttpResponse<TFineractGetAccountResponse>> {
         const url = `${this.fineractConfig.FINERACT_BASE_URL}/${ROUTES.savingsAccount}/${accountId}`;
-        this.logger.info(`Request to fin    eact ${url}`);
-        const res = await this.httpClient.send<TFineractGetAccountResponse>({
+        this.logger.info(`Request to fineract ${url}`);
+        return await this.httpClient.send<TFineractGetAccountResponse>({
             url: url,
             method: 'GET',
             headers: {
-                'fineract-platform-tenantId': this.fineractConfig.FINERACT_TENANT_ID,
-                Authorization: this.getAuthHeader(),
+                ...this.getDefaultHeaders(),
             },
         });
-        return res;
+    }
+
+    private getDefaultHeaders() {
+        return {
+            'fineract-platform-tenantId': this.fineractConfig.FINERACT_TENANT_ID,
+            Authorization: this.getAuthHeader(),
+        };
     }
 
     private getAuthHeader(): string {
@@ -206,35 +207,31 @@ export class FineractClient implements IFineractClient {
     private async getClient(clientId: number): Promise<THttpResponse<TFineractGetClientResponse>> {
         const url = `${this.fineractConfig.FINERACT_BASE_URL}/${ROUTES.clients}/${clientId}`;
         this.logger.info(`Request to fineract ${url}`);
-        const res = await this.httpClient.send<TFineractGetClientResponse>({
+        return await this.httpClient.send<TFineractGetClientResponse>({
             url: url,
             method: 'GET',
             headers: {
-                'fineract-platform-tenantId': this.fineractConfig.FINERACT_TENANT_ID,
-                Authorization: this.getAuthHeader(),
+                ...this.getDefaultHeaders(),
             },
         });
-        return res;
     }
 
     async sendTransfer(
         transactionPayload: TFineractTransferDeps,
     ): Promise<THttpResponse<TFineractTransactionResponse>> {
         this.logger.info('Request to fineract. Withdraw');
-        const url = `${this.fineractConfig.FINERACT_BASE_URL}/${ROUTES.savingsAccount}/${transactionPayload.accountId}/transactions?command=withdraw`;
+        const url = `${this.fineractConfig.FINERACT_BASE_URL}/${ROUTES.savingsAccount}/${transactionPayload.accountId}/transactions?command=withdrawal`;
         try {
-            const res = await this.httpClient.post<TFineractTransactionPayload, TFineractTransactionResponse>(
+            return await this.httpClient.post<TFineractTransactionPayload, TFineractTransactionResponse>(
                 url,
                 transactionPayload.transaction,
                 {
                     headers: {
-                        'fineract-platform-tenantId': this.fineractConfig.FINERACT_TENANT_ID,
-                        Authorization: this.getAuthHeader(),
+                        ...this.getDefaultHeaders(),
                         'Content-Type': 'application/json',
                     },
                 },
             );
-            return res;
         } catch (error) {
             this.logger.error(error as Error);
             throw new FineractWithdrawFailedError((error as Error).message, 'FIN');
@@ -246,8 +243,12 @@ export class FineractClient implements IFineractClient {
         const url = `${this.fineractConfig.FINERACT_BASE_URL}/${ROUTES.charges}`;
 
         try {
-            const res = await this.httpClient.get<TFineractGetChargeResponse>(url);
-            return res;
+            return await this.httpClient.get<TFineractGetChargeResponse>(url, {
+                headers: {
+                    ...this.getDefaultHeaders(),
+                    'Content-Type': 'application/json',
+                },
+            });
         } catch (error) {
             this.logger.error(error as Error);
             throw new FineractGetChargesError((error as Error).message, 'FIN');

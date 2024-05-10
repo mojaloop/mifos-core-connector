@@ -130,6 +130,15 @@ export type TFineractGetAccountResponse = {
     };
 };
 
+export type TRefundErrorDeps = {
+    message: string;
+    context: string;
+    refundDetails: {
+        amount: number;
+        fineractAccountId: number;
+    };
+};
+
 export type TFineractGetClientResponse = {
     id: number;
     accountNo: string;
@@ -196,7 +205,7 @@ export interface IFineractClient {
     verifyBeneficiary(accountNo: string): Promise<TLookupResponseInfo>;
     receiveTransfer(transferDeps: TFineractTransferDeps): Promise<THttpResponse<TFineractTransactionResponse>>;
     getAccountId(accountNo: string): Promise<TLookupResponseInfo>;
-    calculateQuote(quoteDeps: TCalculateQuoteDeps): Promise<TCalculateQuoteResponse>;
+    calculateWithdrawQuote(quoteDeps: TCalculateQuoteDeps): Promise<TCalculateQuoteResponse>;
     getSavingsAccount(accountId: number): Promise<THttpResponse<TFineractGetAccountResponse>>;
     sendTransfer(transactionPayload: TFineractTransferDeps): Promise<THttpResponse<TFineractTransactionResponse>>;
 }
@@ -208,13 +217,11 @@ export type TFineractClientFactoryDeps = {
 };
 
 export type TCalculateQuoteDeps = {
-    accountNo?: string;
     amount: number;
 };
 
 export type TCalculateQuoteResponse = {
     feeAmount: number;
-    accountNo?: string;
 };
 
 export type TFineractTransactionPayload = {
