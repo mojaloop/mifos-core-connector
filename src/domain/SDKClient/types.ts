@@ -54,7 +54,24 @@ export type TFineractOutboundTransferRequest = {
     skipPartyLookup?: boolean;
 };
 
-export type TSDKOutboundTransferRequest = SDKSchemeAdapter.V2_0_0.Outbound.Types.transferRequest;
+export type TSDKOutboundTransferRequest = {
+    /** @description Transaction ID from the DFSP backend, used to reconcile transactions between the Switch and DFSP backend systems. */
+    homeTransactionId: string;
+    from: components['schemas']['transferParty'];
+    to: components['schemas']['transferParty'];
+    amountType: components['schemas']['AmountType'];
+    currency: components['schemas']['Currency'];
+    amount: components['schemas']['Amount'];
+    transactionType: components['schemas']['transferTransactionType'];
+    subScenario?: components['schemas']['TransactionSubScenario'];
+    note?: components['schemas']['Note'];
+    quoteRequestExtensions?: components['schemas']['extensionListEmptiable'];
+    transferRequestExtensions?: components['schemas']['extensionListEmptiable'];
+    /** @description Set to true if supplying an FSPID for the payee party and no party resolution is needed. This may be useful is a previous party resolution has been performed. */
+    skipPartyLookup?: boolean;
+};
+
+export type TSDKOutboundTransferResponse = SDKSchemeAdapter.V2_0_0.Outbound.Types.transferResponse;
 
 export type TFineractOutboundTransferResponse = {
     totalAmountFromFineract: number;
@@ -65,7 +82,13 @@ export type TFineractTransferContinuationRequest = {
     transferContinuationAccept:
         | SDKSchemeAdapter.V2_0_0.Outbound.Types.transferContinuationAcceptParty
         | SDKSchemeAdapter.V2_0_0.Outbound.Types.transferContinuationAcceptQuote;
-    fineractAccountId: number;
+    fineractTransaction: {
+        fineractAccountId: number | string;
+        totalAmount: number;
+        routingCode: string;
+        receiptNumber: string;
+        bankNumber: string;
+    };
 };
 
 export type TSDKTransferContinuationRequest =
@@ -94,7 +117,7 @@ export type TSDKClientDeps = {
 };
 
 export interface ISDKClient {
-    initiateTransfer(transfer: TSDKOutboundTransferRequest): Promise<THttpResponse<TFineractOutboundTransferResponse>>;
+    initiateTransfer(transfer: TSDKOutboundTransferRequest): Promise<THttpResponse<TSDKOutboundTransferResponse>>;
     updateTransfer(
         transferAccept: TSDKTransferContinuationRequest,
         id: number,
