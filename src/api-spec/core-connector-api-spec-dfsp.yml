@@ -27,11 +27,46 @@ paths:
                 '200':
                     $ref: '#/components/responses/transferSuccess'
                 '400':
-                    $ref: '#/components/responses/transferBadRequest'
+                    description: Malformed or missing required body, headers or parameters
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    status:
+                                        type: string
+                                        example: "3200"
+                                    message:
+                                        type: string
+                                        example: "Account No Invalid"
+
+                '404':
+                    description: Resource Not Found
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    status:
+                                        type: string
+                                        example: "2000"
+                                    message:
+                                        type: string
+                                        example: "Account Not Found"
+
                 '500':
-                    $ref: '#/components/responses/transferServerError'
-                '504':
-                    $ref: '#/components/responses/transferTimeout'
+                    description: Internal Server Error
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    status:
+                                        type: string
+                                        example: "2000"
+                                    message:
+                                        type: string
+                                        example: "Failed to Initiate transaction"
 
     /transfers/{transferId}:
         put:
@@ -76,10 +111,42 @@ paths:
             responses:
                 '200':
                     $ref: '#/components/responses/transferSuccess'
+                '404':
+                    description: Resource Not Found
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    status:
+                                        type: string
+                                        example: "2000"
+                                    message:
+                                        type: string
+                                        example: "Account Not Found"
+
                 '500':
-                    $ref: '#/components/responses/transferServerError'
-                '504':
-                    $ref: '#/components/responses/transferTimeout'
+                    description: Internal Server Error
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    status:
+                                        type: string
+                                        example: "2000"
+                                    message:
+                                        type: string
+                                        example: "Failed to Withdraw funds"
+                                    refundDetails:
+                                        type: object
+                                        properties:
+                                            amount:
+                                                type: number
+                                                example: 300
+                                            fineractAccountId:
+                                                type: number
+                                                example: 4
 
 components:
     schemas:
@@ -630,8 +697,8 @@ components:
                     type: object
                     properties:
                         fineractAccountId:
-                            type: string
-                            example: '1'
+                            type: number
+                            example: 1
                         payer:
                             $ref: '#/components/schemas/PartyInfo'
                 to:
