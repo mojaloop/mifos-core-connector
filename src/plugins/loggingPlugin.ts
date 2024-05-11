@@ -16,10 +16,10 @@ export const loggingPlugin: Plugin<LoggingPluginOptions> = {
         server.ext({
             type: 'onPreHandler',
             method: (req: Request, h: ResponseToolkit) => {
-                const { path, method, info} = req;
-                const { id, remoteAddress, received} = info;
+                const { path, method, info, payload } = req;
+                const { id, remoteAddress, received } = info;
                 const context = {
-                    id, remoteAddress, path, method, received,
+                    id, remoteAddress, path, method, received, payload,
                 };
                 Object.assign(req.app, { context });
                 logger.info(`[==> req] ${method.toUpperCase()} ${path}`, context);
