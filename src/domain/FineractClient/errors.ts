@@ -45,3 +45,5 @@ export class FineractDepositFailedError extends BaseError {}
 export class FineractGetChargesError extends BaseError {}
 
 export class FineractAccountInsufficientBalance extends BaseError {}
+
+export class FineractAccountDebitOrCreditBlockedError extends BaseError {}

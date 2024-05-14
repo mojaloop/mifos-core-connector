@@ -92,7 +92,18 @@ export type TFineractGetAccountResponse = {
     savingsProductName: string;
     fieldOfficerId: number;
     status: TFineractAccountStatus;
-    subStatus: unknown;
+    subStatus: {
+        id: number;
+        code: string;
+        value: string;
+        none: boolean;
+        inactive: boolean;
+        dormant: boolean;
+        escheat: boolean;
+        block: boolean;
+        blockCredit: boolean;
+        blockDebit: boolean;
+    };
     timeline: unknown;
     currency: {
         code: string;

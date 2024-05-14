@@ -64,6 +64,7 @@ import {
     FineractAccountInsufficientBalance,
     FineractWithdrawFailedError,
     SearchFineractAccountError,
+    FineractAccountDebitOrCreditBlockedError,
 } from './FineractClient';
 
 export class CoreConnectorAggregate {
@@ -156,16 +157,23 @@ export class CoreConnectorAggregate {
             receiptNumber: randomUUID(),
             bankNumber: this.fineractConfig.FINERACT_BANK_ID,
         };
+        const account = await this.fineractClient.getSavingsAccount(res.accountId);
+        if (account.statusCode != 200) {
+            throw new FineractGetAccountWithIdError('Failed to retrieve destination account from fineract', 'MFCC Agg');
+        } else if (!account.data.status.active) {
+            throw new AccountVerificationError('Funds Destination Account is not active in Fineract', 'MFCC Agg');
+        } else if (account.data.subStatus.blockCredit) {
+            throw new FineractAccountDebitOrCreditBlockedError('Account blocked from credit', 'MFCC Agg');
+        }
         await this.fineractClient.receiveTransfer({
             accountId: res.accountId as number,
             transaction: transaction,
         });
-        const transferResponse: TtransferResponse = {
+        return {
             completedTimestamp: new Date().toJSON(),
             homeTransactionId: transfer.transferId,
             transferState: 'COMMITTED',
         };
-        return transferResponse;
     }
 
     async sendTransfer(transfer: TFineractOutboundTransferRequest): Promise<TFineractOutboundTransferResponse> {
@@ -175,6 +183,8 @@ export class CoreConnectorAggregate {
             throw new FineractGetAccountWithIdError('Failed to retrieve source account from fineract', 'MFCC Agg');
         } else if (!account.data.status.active) {
             throw new AccountVerificationError('Funds Source Account is not active in Fineract', 'MFCC Agg');
+        } else if (account.data.subStatus.blockCredit || account.data.subStatus.blockDebit) {
+            throw new FineractAccountDebitOrCreditBlockedError('Account blocked from credit or debit', 'MFCC Agg');
         }
         const sdkOutboundTransfer: TSDKOutboundTransferRequest = this.getSDKTransferRequest(transfer);
         const transferRes = await this.sdkClient.initiateTransfer(sdkOutboundTransfer);
