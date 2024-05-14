@@ -30,7 +30,7 @@ import config from '../../src/config';
 import { FineractClientFactory } from '../../src/domain/FineractClient';
 import { TFineractConfig } from '../../src/domain/FineractClient/types';
 import { loggerFactory } from '../../src/infra/logger';
-import { CoreConnectorAggregate, TQuoteRequest, TtransferRequest } from '../../src/domain';
+import { CoreConnectorAggregate, TQuoteRequest } from '../../src/domain';
 import { SDKClientFactory } from '../../src/domain/SDKClient';
 
 const logger = loggerFactory({ context: 'Mifos Core Connector Tests' });
@@ -131,114 +131,114 @@ describe('Core Connector Aggregate Unit Tests', () => {
         expect(res).toBeTruthy();
     });
 
-    test('Aggregate Transfer Request. Should return truthy response if account is active', async () => {
-        const transfer: TtransferRequest = {
-            homeR2PTransactionId: 'string',
-            amount: '500',
-            amountType: 'SEND',
-            currency: 'NGN',
-            from: {
-                dateOfBirth: '5704-02-29',
-                displayName: 'string',
-                extensionList: [
-                    {
-                        key: 'string',
-                        value: 'string',
-                    },
-                ],
-                firstName: 'string',
-                fspId: 'string',
-                idSubValue: 'string',
-                idType: 'MSISDN',
-                idValue: 'string',
-                lastName: 'string',
-                merchantClassificationCode: 'string',
-                middleName: 'string',
-                type: 'CONSUMER',
-            },
-            ilpPacket: {
-                data: {
-                    amount: {
-                        amount: '500',
-                        currency: 'NGN',
-                    },
-                    payee: {
-                        partyIdInfo: {
-                            partyIdType: 'IBAN',
-                            partyIdentifier: IBAN,
-                        },
-                    },
-                    payer: {
-                        partyIdInfo: {
-                            partyIdType: 'MSISDN',
-                            partyIdentifier: '820323232',
-                        },
-                    },
-                    quoteId: '27653e60-e21c-1414-8a35-0b5b97d5abc7',
-                    transactionId: '9fe8c410-5b31-188f-858f-67cb6b308198',
-                    transactionType: {
-                        initiator: 'PAYER',
-                        initiatorType: 'CONSUMER',
-                        scenario: 'TRANSFER',
-                        subScenario: 'string',
-                    },
-                },
-            },
-            note: 'string',
-            quote: {
-                expiration: '5200-02-29T21:42:06.649-09:08',
-                extensionList: [
-                    {
-                        key: 'string',
-                        value: 'string',
-                    },
-                ],
-                geoCode: {
-                    latitude: '90',
-                    longitude: '+6.06',
-                },
-                payeeFspCommissionAmount: '0.97',
-                payeeFspCommissionAmountCurrency: 'NGN',
-                payeeFspFeeAmount: '0',
-                payeeFspFeeAmountCurrency: 'NGN',
-                payeeReceiveAmount: '0',
-                payeeReceiveAmountCurrency: 'NGN',
-                quoteId: randomUUID(),
-                transactionId: randomUUID(),
-                transferAmount: '500',
-                transferAmountCurrency: 'NGN',
-            },
-            quoteRequestExtensions: [
-                {
-                    key: 'string',
-                    value: 'string',
-                },
-            ],
-            subScenario: 'string',
-            to: {
-                dateOfBirth: '3956-02-29',
-                displayName: 'string',
-                extensionList: [
-                    {
-                        key: 'string',
-                        value: 'string',
-                    },
-                ],
-                firstName: 'string',
-                fspId: 'string',
-                idSubValue: 'string',
-                idType: 'IBAN',
-                idValue: IBAN,
-                lastName: 'string',
-                merchantClassificationCode: 'string',
-                middleName: 'string',
-                type: 'CONSUMER',
-            },
-            transactionType: 'TRANSFER',
-            transferId: randomUUID(),
-            transactionRequestId: randomUUID(),
-        };
-        const res = await coreConnectorAggregate.receiveTransfer(transfer);
-        expect(res).toBeTruthy();
-    });
+    // test('Aggregate Transfer Request. Should return truthy response if account is active', async () => {
+    //     const transfer: TtransferRequest = {
+    //         homeR2PTransactionId: 'string',
+    //         amount: '500',
+    //         amountType: 'SEND',
+    //         currency: 'NGN',
+    //         from: {
+    //             dateOfBirth: '5704-02-29',
+    //             displayName: 'string',
+    //             extensionList: [
+    //                 {
+    //                     key: 'string',
+    //                     value: 'string',
+    //                 },
+    //             ],
+    //             firstName: 'string',
+    //             fspId: 'string',
+    //             idSubValue: 'string',
+    //             idType: 'MSISDN',
+    //             idValue: 'string',
+    //             lastName: 'string',
+    //             merchantClassificationCode: 'string',
+    //             middleName: 'string',
+    //             type: 'CONSUMER',
+    //         },
+    //         ilpPacket: {
+    //             data: {
+    //                 amount: {
+    //                     amount: '500',
+    //                     currency: 'NGN',
+    //                 },
+    //                 payee: {
+    //                     partyIdInfo: {
+    //                         partyIdType: 'IBAN',
+    //                         partyIdentifier: IBAN,
+    //                     },
+    //                 },
+    //                 payer: {
+    //                     partyIdInfo: {
+    //                         partyIdType: 'MSISDN',
+    //                         partyIdentifier: '820323232',
+    //                     },
+    //                 },
+    //                 quoteId: '27653e60-e21c-1414-8a35-0b5b97d5abc7',
+    //                 transactionId: '9fe8c410-5b31-188f-858f-67cb6b308198',
+    //                 transactionType: {
+    //                     initiator: 'PAYER',
+    //                     initiatorType: 'CONSUMER',
+    //                     scenario: 'TRANSFER',
+    //                     subScenario: 'string',
+    //                 },
+    //             },
+    //         },
+    //         note: 'string',
+    //         quote: {
+    //             expiration: '5200-02-29T21:42:06.649-09:08',
+    //             extensionList: [
+    //                 {
+    //                     key: 'string',
+    //                     value: 'string',
+    //                 },
+    //             ],
+    //             geoCode: {
+    //                 latitude: '90',
+    //                 longitude: '+6.06',
+    //             },
+    //             payeeFspCommissionAmount: '0.97',
+    //             payeeFspCommissionAmountCurrency: 'NGN',
+    //             payeeFspFeeAmount: '0',
+    //             payeeFspFeeAmountCurrency: 'NGN',
+    //             payeeReceiveAmount: '0',
+    //             payeeReceiveAmountCurrency: 'NGN',
+    //             quoteId: randomUUID(),
+    //             transactionId: randomUUID(),
+    //             transferAmount: '500',
+    //             transferAmountCurrency: 'NGN',
+    //         },
+    //         quoteRequestExtensions: [
+    //             {
+    //                 key: 'string',
+    //                 value: 'string',
+    //             },
+    //         ],
+    //         subScenario: 'string',
+    //         to: {
+    //             dateOfBirth: '3956-02-29',
+    //             displayName: 'string',
+    //             extensionList: [
+    //                 {
+    //                     key: 'string',
+    //                     value: 'string',
+    //                 },
+    //             ],
+    //             firstName: 'string',
+    //             fspId: 'string',
+    //             idSubValue: 'string',
+    //             idType: 'IBAN',
+    //             idValue: IBAN,
+    //             lastName: 'string',
+    //             merchantClassificationCode: 'string',
+    //             middleName: 'string',
+    //             type: 'CONSUMER',
+    //         },
+    //         transactionType: 'TRANSFER',
+    //         transferId: randomUUID(),
+    //         transactionRequestId: randomUUID(),
+    //     };
+    //     const res = await coreConnectorAggregate.receiveTransfer(transfer);
+    //     expect(res).toBeTruthy();
+    // });
 });

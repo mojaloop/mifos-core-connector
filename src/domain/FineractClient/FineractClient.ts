@@ -122,7 +122,7 @@ export class FineractClient implements IFineractClient {
                 data: transferDeps.transaction,
             });
         } catch (error) {
-            this.logger.error((error as Error).message);
+            this.logger.error(error as Error);
             throw new FineractDepositFailedError((error as Error).message, 'FIN');
         }
     }
