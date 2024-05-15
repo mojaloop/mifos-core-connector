@@ -94,8 +94,8 @@ export class Service {
         this.dfspServer.route(dfspCoreConnectorRoutes.getRoutes());
 
         await this.sdkServer.start();
-        await this.dfspServer.start();
         logger.info(`SDK Core Connector Server running at ${this.sdkServer.info.uri}`);
+        await this.dfspServer.start();
         logger.info(`DFSP Core Connector Server running at ${this.dfspServer.info.uri}`);
     }
 
