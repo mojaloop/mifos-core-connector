@@ -47,10 +47,7 @@ export class Service {
     static sdkServer: Server;
     static dfspServer: Server;
 
-    static async start(httpClient?: IHTTPClient) {
-        if (!httpClient) {
-            httpClient = AxiosClientFactory.createAxiosClientInstance();
-        }
+    static async start(httpClient: IHTTPClient = AxiosClientFactory.createAxiosClientInstance()) {
         this.httpClient = httpClient;
         const fineractConfig = config.get('fineract');
         const fineractClient = FineractClientFactory.createClient({
@@ -62,7 +59,7 @@ export class Service {
         const sdkClient = SDKClientFactory.getSDKClientInstance(
             logger,
             httpClient,
-            config.get('sdkSchemeAdapter.SDK_BASE_URL') as string,
+            config.get('sdkSchemeAdapter.SDK_BASE_URL'),
         );
         this.coreConnectorAggregate = new CoreConnectorAggregate(fineractConfig, fineractClient, sdkClient, logger);
 

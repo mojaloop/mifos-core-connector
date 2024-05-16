@@ -32,15 +32,47 @@ import { loggerFactory } from '../../infra/logger';
 import { TRefundErrorDeps } from '../FineractClient';
 
 export class BaseError extends Error {
-    constructor(message: string, context: string) {
-        const logger: ILogger = loggerFactory({ context: context });
-        super(message);
-        logger.error(message);
-        Object.setPrototypeOf(this, new.target.prototype);
+  constructor(message: string, context: string) {
+    const logger: ILogger = loggerFactory({ context: context });
+    super(message);
+    logger.error(message);
+    Object.setPrototypeOf(this, new.target.prototype);
+  }
+}
+
+// another approach with error class
+export type ErrorOptions = {
+  cause?: Error;
+  httpCode?: number;
+  mlCode?: string
+  details?: unknown;
+}
+
+export class BasicError extends Error {
+  cause?: Error;
+  httpCode?: number;
+  mlCode?: string; // Mojaloop error code
+  details?: unknown;
+
+  constructor(message: string, options?: ErrorOptions) {
+        super(message, options);
+        Error.captureStackTrace(this, BasicError);
+        this.name = this.constructor.name;
+        this.httpCode = options?.httpCode;
+        this.mlCode = options?.mlCode;
+        this.details = options?.details;
     }
 }
 
-export class InvalidAccountNumberError extends BaseError {}
+export class InvalidAccountNumberError extends BasicError {
+    constructor(message = 'Account number length is too short', options?: ErrorOptions) {
+        super(message, {
+          ...options,
+          mlCode: '3101',
+          httpCode: 400
+        });
+    }
+}
 
 export class AccountVerificationError extends BaseError {}
 
@@ -51,6 +83,7 @@ export class RefundFailedError extends BaseError {
         amount: number;
         fineractAccountId: number;
     };
+  // breaks Barbara Liskov's substitution principle!
     constructor(deps: TRefundErrorDeps) {
         super(deps.message, deps.context);
         this.refundDetails = deps.refundDetails;

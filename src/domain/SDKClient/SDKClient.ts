@@ -34,7 +34,7 @@ import {
     TSDKTransferContinuationRequest,
     TSDKOutboundTransferResponse,
 } from './types';
-import { IHTTPClient, ILogger, THttpResponse } from '../interfaces';
+import {IHTTPClient, ILogger, THttpResponse} from '../interfaces';
 import { SDKClientContinueTransferError, SDKClientInitiateTransferError } from './errors';
 
 export class SDKClient implements ISDKClient {
@@ -48,10 +48,8 @@ export class SDKClient implements ISDKClient {
         this.SDK_SCHEME_ADAPTER_BASE_URL = deps.schemeAdapterUrl;
     }
 
-    async initiateTransfer(
-        transfer: TSDKOutboundTransferRequest,
-    ): Promise<THttpResponse<TSDKOutboundTransferResponse>> {
-        this.logger.info('SDKClient initiate receiveTransfer %s', transfer);
+    async initiateTransfer(transfer: TSDKOutboundTransferRequest): Promise<THttpResponse<TSDKOutboundTransferResponse>> {
+        this.logger.info('SDKClient initiate receiveTransfer', transfer);
         try {
             const res = await this.httpClient.post<TSDKOutboundTransferRequest, TSDKOutboundTransferResponse>(
                 `${this.SDK_SCHEME_ADAPTER_BASE_URL}/transfers`,

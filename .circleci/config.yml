@@ -126,6 +126,8 @@ jobs:
           paths:
             - ./docker-image-local.tar
 
+  # todo: add unit tests
+
   test-functional:
     executor: default-machine
     steps:

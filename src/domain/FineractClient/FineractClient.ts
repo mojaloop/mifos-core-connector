@@ -53,6 +53,8 @@ import {
     SearchFineractAccountError,
 } from './errors';
 
+import { CHARGE_TIME_TYPES } from '../../constants'
+
 export const ROUTES = Object.freeze({
     search: 'search',
     savingsAccount: 'savingsaccounts',
@@ -73,7 +75,7 @@ export class FineractClient implements IFineractClient {
 
     async lookupPartyInfo(accountNo: string): Promise<TLookupResponseInfo> {
         this.logger.info(`Looking up party with account ${accountNo}`);
-        return await this.getAccountId(accountNo);
+        return this.getAccountId(accountNo);
     }
 
     async calculateWithdrawQuote(quoteDeps: TCalculateQuoteDeps): Promise<TCalculateQuoteResponse> {
@@ -84,8 +86,9 @@ export class FineractClient implements IFineractClient {
         let fee = 0;
 
         charges.data.forEach((charge) => {
-            if (charge.chargeAppliesTo.id == 2 && charge.chargeTimeType.id == 5) {
-                if (charge.chargeCalculationType.id == 1) {
+            // todo: avoid "magic" numbers!
+            if (charge.chargeAppliesTo.id === 2 && charge.chargeTimeType.id === CHARGE_TIME_TYPES.Withdrawal) {
+                if (charge.chargeCalculationType.id === 1) {
                     fee = fee + charge.amount;
                 } else {
                     fee = fee + (charge.amount / 100) * quoteDeps.amount;
@@ -162,7 +165,7 @@ export class FineractClient implements IFineractClient {
             status: getClientRes.statusCode,
             currency: currency,
         };
-        this.logger.info(`Client details found ${lookUpRes}`);
+        this.logger.info(`Client details found`, lookUpRes);
         return lookUpRes;
     }
 

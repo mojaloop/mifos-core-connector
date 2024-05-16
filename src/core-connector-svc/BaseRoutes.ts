@@ -30,10 +30,10 @@
 import { ResponseToolkit } from '@hapi/hapi';
 import { ResponseValue } from 'hapi';
 import {
-    AccountVerificationError,
-    InvalidAccountNumberError,
-    RefundFailedError,
-    UnSupportedIdTypeError,
+  AccountVerificationError,
+  InvalidAccountNumberError,
+  RefundFailedError,
+  UnSupportedIdTypeError,
 } from '../domain';
 import {
     FineractAccountInsufficientBalance,
@@ -52,13 +52,38 @@ import {
     SDKNoQuoteReturnedError,
 } from '../domain/SDKClient';
 
+// type ErrorResponseDetails = {
+//   message: string,
+//   status: string, // mlCode
+//   httpCode: number
+// };
+// const getErrorDetails = (error: unknown): ErrorResponseDetails => {
+//   if (error instanceof BasicError) {
+//     const { message, mlCode = '', httpCode = 500 } = error;
+//     return {
+//       message,
+//       status: mlCode,
+//       httpCode
+//     };
+//   }
+//
+//   return {
+//     message: error instanceof Error ? error.message : 'Unknown Error',
+//     status: '',
+//     httpCode: 500
+//   };
+// };
+
 export class BaseRoutes {
     protected handleResponse(data: unknown, h: ResponseToolkit, statusCode: number = 200) {
         return h.response(data as ResponseValue).code(statusCode);
     }
 
     protected handleError(error: unknown, h: ResponseToolkit) {
-        if (error instanceof InvalidAccountNumberError) {
+        // const { message, status, httpCode } = getErrorDetails(error);
+        // return h.response({ status, message }).code(httpCode);
+
+       if (error instanceof InvalidAccountNumberError) {
             return h.response({ status: '3101', message: 'Invalid Account Number provided' }).code(400);
         } else if (error instanceof AccountVerificationError) {
             return h

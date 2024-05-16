@@ -34,7 +34,7 @@ import {
     PartyType,
     TFineractConfig,
     TFineractTransactionPayload,
-    TFineractTransferDeps,
+    TFineractTransferDeps, TFineractGetAccountResponse,
 } from './FineractClient/types';
 import {
     ILogger,
@@ -86,7 +86,7 @@ export class CoreConnectorAggregate {
         this.logger.info(`Get Parties for IBAN ${IBAN}`);
         const accountNo = this.extractAccountFromIBAN(IBAN);
         if (accountNo.length < 1) {
-            throw new InvalidAccountNumberError(`Account number length is too short`, 'MFCC Agg');
+            throw new InvalidAccountNumberError();
         }
         const lookupRes = await this.fineractClient.lookupPartyInfo(accountNo);
         const party = {
@@ -113,7 +113,7 @@ export class CoreConnectorAggregate {
         this.logger.info(`Get Parties for ${this.IdType} ${quoteRequest.to.idValue}`);
         const accountNo = this.extractAccountFromIBAN(quoteRequest.to.idValue);
         if (accountNo.length < 1) {
-            throw new InvalidAccountNumberError(`Account number length is too short`, 'MFCC Agg');
+            throw new InvalidAccountNumberError();
         }
         const quoteRes = await this.fineractClient.verifyBeneficiary(accountNo);
         if (quoteRes.status != 200) {
@@ -142,7 +142,7 @@ export class CoreConnectorAggregate {
         this.logger.info(`Transfer for  ${this.IdType} ${transfer.to.idValue}`);
         const accountNo = this.extractAccountFromIBAN(transfer.to.idValue);
         if (accountNo.length < 1) {
-            throw new InvalidAccountNumberError(`Account number length is too short`, 'MFCC Agg');
+            throw new InvalidAccountNumberError();
         }
         const res = await this.fineractClient.getAccountId(accountNo);
         const date = new Date();
@@ -157,14 +157,11 @@ export class CoreConnectorAggregate {
             receiptNumber: randomUUID(),
             bankNumber: this.fineractConfig.FINERACT_BANK_ID,
         };
-        const account = await this.fineractClient.getSavingsAccount(res.accountId);
-        if (account.statusCode != 200) {
-            throw new FineractGetAccountWithIdError('Failed to retrieve destination account from fineract', 'MFCC Agg');
-        } else if (!account.data.status.active) {
-            throw new AccountVerificationError('Funds Destination Account is not active in Fineract', 'MFCC Agg');
-        } else if (account.data.subStatus.blockCredit) {
+        const accountData = await this.getSavingsAccount(res.accountId);
+        if (accountData.subStatus.blockCredit) {
             throw new FineractAccountDebitOrCreditBlockedError('Account blocked from credit', 'MFCC Agg');
         }
+
         await this.fineractClient.receiveTransfer({
             accountId: res.accountId as number,
             transaction: transaction,
@@ -178,17 +175,14 @@ export class CoreConnectorAggregate {
 
     async sendTransfer(transfer: TFineractOutboundTransferRequest): Promise<TFineractOutboundTransferResponse> {
         this.logger.info(`Transfer from fineract account with ID${transfer.from.fineractAccountId}`);
-        const account = await this.fineractClient.getSavingsAccount(transfer.from.fineractAccountId);
-        if (account.statusCode != 200) {
-            throw new FineractGetAccountWithIdError('Failed to retrieve source account from fineract', 'MFCC Agg');
-        } else if (!account.data.status.active) {
-            throw new AccountVerificationError('Funds Source Account is not active in Fineract', 'MFCC Agg');
-        } else if (account.data.subStatus.blockCredit || account.data.subStatus.blockDebit) {
+        const accountData = await this.getSavingsAccount(transfer.from.fineractAccountId);
+        if (accountData.subStatus.blockCredit || accountData.subStatus.blockDebit) {
             throw new FineractAccountDebitOrCreditBlockedError('Account blocked from credit or debit', 'MFCC Agg');
         }
         const sdkOutboundTransfer: TSDKOutboundTransferRequest = this.getSDKTransferRequest(transfer);
         const transferRes = await this.sdkClient.initiateTransfer(sdkOutboundTransfer);
         if (transferRes.statusCode != 200) {
+            // we already do it in sdkClient.initiateTransfer()
             throw new SDKClientInitiateTransferError(
                 `Transfer initiation failed with status code ${transferRes.statusCode}`,
                 'MFCC Agg',
@@ -203,7 +197,7 @@ export class CoreConnectorAggregate {
                 parseFloat(transferRes.data.quoteResponse.body.payeeFspCommission?.amount as string),
             ]),
         });
-        if (!this.checkAccountBalance(totalFineractFee.feeAmount, account.data.summary.availableBalance)) {
+        if (!this.checkAccountBalance(totalFineractFee.feeAmount, accountData.summary.availableBalance)) {
             throw new FineractAccountInsufficientBalance(
                 'Payer account does not have sufficient funds for transfer',
                 'MFCC Agg',
@@ -259,13 +253,14 @@ export class CoreConnectorAggregate {
                 { acceptQuote: true },
                 transferAccept.sdkTransferId as number,
             );
-            if (updateTransferRes.statusCode != 200) {
-                this.logger.error('Initiate update Transfer failed.', updateTransferRes);
-                throw new SDKClientContinueTransferError(
-                    'SDKClient initiate update receiveTransfer failed.',
-                    'MFCC Agg',
-                );
-            }
+            // we already do it in sdkClient.updateTransfer()
+            // if (updateTransferRes.statusCode != 200) {
+            //     this.logger.error('Initiate update Transfer failed.', updateTransferRes);
+            //     throw new SDKClientContinueTransferError(
+            //         'SDKClient initiate update receiveTransfer failed.',
+            //         'MFCC Agg',
+            //     );
+            // }
             return updateTransferRes.data;
         } catch (error) {
             if (error instanceof SDKClientContinueTransferError) {
@@ -323,5 +318,19 @@ export class CoreConnectorAggregate {
 
     private checkAccountBalance(totalAmount: number, accountBalance: number): boolean {
         return accountBalance > totalAmount;
+    }
+
+    private async getSavingsAccount(accountId: number): Promise<TFineractGetAccountResponse> {
+        this.logger.debug('getting active savingsAccount...', { accountId });
+        const account = await this.fineractClient.getSavingsAccount(accountId);
+
+        if (account.statusCode != 200) {
+            throw new FineractGetAccountWithIdError('Failed to retrieve source account from fineract', 'MFCC Agg');
+        }
+        if (!account.data.status.active) {
+            throw new AccountVerificationError('Funds Source Account is not active in Fineract', 'MFCC Agg');
+        }
+
+        return account.data;
     }
 }
