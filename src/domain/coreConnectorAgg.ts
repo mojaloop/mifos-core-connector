@@ -245,17 +245,34 @@ export class CoreConnectorAggregate {
         } catch (error) {
             if (error instanceof SDKClientContinueTransferError) {
                 //Refund the money
-                const depositRes = await this.fineractClient.receiveTransfer(await this.getTransaction(transferAccept));
-                if (depositRes.statusCode != 200) {
-                    throw new RefundFailedError({
-                        message: `Refund of ${transferAccept.fineractTransaction.totalAmount} failed for account with id ${transferAccept.fineractTransaction.fineractAccountId}`,
-                        context: 'MFCC Agg',
-                        refundDetails: {
-                            amount: transferAccept.fineractTransaction.totalAmount,
-                            fineractAccountId: transferAccept.fineractTransaction.fineractAccountId,
-                        },
+                await this.fineractClient
+                    .receiveTransfer(await this.getTransaction(transferAccept))
+                    .then((res) => {
+                        if (res.statusCode != 200) {
+                            throw new RefundFailedError({
+                                message: `Refund of ${transferAccept.fineractTransaction.totalAmount} failed for account with id ${transferAccept.fineractTransaction.fineractAccountId}`,
+                                context: 'MFCC Agg',
+                                refundDetails: {
+                                    amount: transferAccept.fineractTransaction.totalAmount,
+                                    fineractAccountId: transferAccept.fineractTransaction.fineractAccountId,
+                                },
+                            });
+                        }
+                    })
+                    .catch((error: unknown) => {
+                        this.logger.error(
+                            `Refund of ${transferAccept.fineractTransaction.totalAmount} failed for account with id ${transferAccept.fineractTransaction.fineractAccountId}`,
+                            error,
+                        );
+                        throw new RefundFailedError({
+                            message: `Refund of ${transferAccept.fineractTransaction.totalAmount} failed for account with id ${transferAccept.fineractTransaction.fineractAccountId}`,
+                            context: 'MFCC Agg',
+                            refundDetails: {
+                                amount: transferAccept.fineractTransaction.totalAmount,
+                                fineractAccountId: transferAccept.fineractTransaction.fineractAccountId,
+                            },
+                        });
                     });
-                }
             }
             throw error;
         }
