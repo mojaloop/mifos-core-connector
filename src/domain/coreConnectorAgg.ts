@@ -251,7 +251,7 @@ export class CoreConnectorAggregate {
                         message: `Refund of ${transferAccept.fineractTransaction.totalAmount} failed for account with id ${transferAccept.fineractTransaction.fineractAccountId}`,
                         context: 'MFCC Agg',
                         refundDetails: {
-                            amount: parseFloat(transferAccept.fineractTransaction.totalAmount.toString()),
+                            amount: transferAccept.fineractTransaction.totalAmount,
                             fineractAccountId: transferAccept.fineractTransaction.fineractAccountId,
                         },
                     });
