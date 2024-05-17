@@ -220,41 +220,16 @@ export class CoreConnectorAggregate {
         this.logger.info(
             `Continuing transfer with id ${transferAccept.sdkTransferId} and account with id ${transferAccept.fineractTransaction.fineractAccountId}`,
         );
-        const accountRes = await this.fineractClient.getSavingsAccount(
-            transferAccept.fineractTransaction.fineractAccountId as number,
-        );
-
-        if (accountRes.statusCode != 200) {
-            throw new SearchFineractAccountError(
-                `Search for Account failed with status code ${accountRes.statusCode}`,
-                'MFCC Agg',
-            );
-        }
-
-        const date = new Date();
-        const transaction: TFineractTransferDeps = {
-            accountId: transferAccept.fineractTransaction.fineractAccountId as number,
-            transaction: {
-                locale: this.fineractConfig.FINERACT_LOCALE,
-                dateFormat: this.DATE_FORMAT,
-                transactionDate: `${date.getDate()} ${date.getMonth() + 1} ${date.getFullYear()}`,
-                transactionAmount: transferAccept.fineractTransaction.totalAmount.toString(),
-                paymentTypeId: '1',
-                accountNumber: accountRes.data.accountNo,
-                routingCode: transferAccept.fineractTransaction.routingCode,
-                receiptNumber: transferAccept.fineractTransaction.receiptNumber,
-                bankNumber: transferAccept.fineractTransaction.bankNumber,
-            },
-        };
-        const withdrawRes = await this.fineractClient.sendTransfer(transaction);
-        if (withdrawRes.statusCode != 200) {
-            throw new FineractWithdrawFailedError(
-                `Withdraw failed with status code ${withdrawRes.statusCode}`,
-                'MFCC Agg',
-            );
-        }
 
         try {
+            const withdrawRes = await this.fineractClient.sendTransfer(await this.getTransaction(transferAccept));
+            if (withdrawRes.statusCode != 200) {
+                throw new FineractWithdrawFailedError(
+                    `Withdraw failed with status code ${withdrawRes.statusCode}`,
+                    'MFCC Agg',
+                );
+            }
+
             const updateTransferRes = await this.sdkClient.updateTransfer(
                 { acceptQuote: true },
                 transferAccept.sdkTransferId as number,
@@ -270,19 +245,19 @@ export class CoreConnectorAggregate {
         } catch (error) {
             if (error instanceof SDKClientContinueTransferError) {
                 //Refund the money
-                const depositRes = await this.fineractClient.receiveTransfer(transaction);
+                const depositRes = await this.fineractClient.receiveTransfer(await this.getTransaction(transferAccept));
                 if (depositRes.statusCode != 200) {
                     throw new RefundFailedError({
                         message: `Refund of ${transferAccept.fineractTransaction.totalAmount} failed for account with id ${transferAccept.fineractTransaction.fineractAccountId}`,
                         context: 'MFCC Agg',
                         refundDetails: {
-                            amount: parseFloat(transaction.transaction.transactionAmount),
-                            fineractAccountId: transaction.accountId,
+                            amount: parseFloat(transferAccept.fineractTransaction.totalAmount.toString()),
+                            fineractAccountId: transferAccept.fineractTransaction.fineractAccountId,
                         },
                     });
                 }
             }
-            throw new SDKClientContinueTransferError('SDKClient initiate update receiveTransfer failed.', 'MFCC Agg');
+            throw error;
         }
     }
 
@@ -323,5 +298,34 @@ export class CoreConnectorAggregate {
 
     private checkAccountBalance(totalAmount: number, accountBalance: number): boolean {
         return accountBalance > totalAmount;
+    }
+
+    private async getTransaction(transferAccept: TUpdateTransferDeps): Promise<TFineractTransferDeps> {
+        this.logger.info('Getting fineract transaction');
+        const accountRes = await this.fineractClient.getSavingsAccount(
+            transferAccept.fineractTransaction.fineractAccountId as number,
+        );
+
+        if (accountRes.statusCode != 200) {
+            throw new SearchFineractAccountError(
+                `Search for Account failed with status code ${accountRes.statusCode}`,
+                'MFCC Agg',
+            );
+        }
+        const date = new Date();
+        return {
+            accountId: transferAccept.fineractTransaction.fineractAccountId as number,
+            transaction: {
+                locale: this.fineractConfig.FINERACT_LOCALE,
+                dateFormat: this.DATE_FORMAT,
+                transactionDate: `${date.getDate()} ${date.getMonth() + 1} ${date.getFullYear()}`,
+                transactionAmount: transferAccept.fineractTransaction.totalAmount.toString(),
+                paymentTypeId: '1',
+                accountNumber: accountRes.data.accountNo,
+                routingCode: transferAccept.fineractTransaction.routingCode,
+                receiptNumber: transferAccept.fineractTransaction.receiptNumber,
+                bankNumber: transferAccept.fineractTransaction.bankNumber,
+            },
+        };
     }
 }
