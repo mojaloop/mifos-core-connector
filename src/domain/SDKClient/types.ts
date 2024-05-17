@@ -83,7 +83,7 @@ export type TFineractTransferContinuationRequest = {
         | SDKSchemeAdapter.V2_0_0.Outbound.Types.transferContinuationAcceptParty
         | SDKSchemeAdapter.V2_0_0.Outbound.Types.transferContinuationAcceptQuote;
     fineractTransaction: {
-        fineractAccountId: number | string;
+        fineractAccountId: number;
         totalAmount: number;
         routingCode: string;
         receiptNumber: string;
@@ -97,7 +97,7 @@ export type TSDKTransferContinuationRequest =
 
 export type TUpdateTransferDeps = {
     fineractTransaction: {
-        fineractAccountId: number | string;
+        fineractAccountId: number;
         totalAmount: number;
         routingCode: string;
         receiptNumber: string;

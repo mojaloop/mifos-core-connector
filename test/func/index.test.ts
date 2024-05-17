@@ -266,7 +266,7 @@ describe('Mifos Core Connector Functional Tests', () => {
             amountType: 'SEND',
             currency: 'AED',
             from: {
-                fineractAccountId: 1,
+                fineractAccountId: 2,
                 payer: {
                     dateOfBirth: '8477-05-21',
                     displayName: 'string',
