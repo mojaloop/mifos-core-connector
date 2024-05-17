@@ -27,10 +27,6 @@
 
 'use strict';
 
-// todo: uncomment it after we use convict everywhere
-// import { config } from 'dotenv';
-// config()
-
 import { Service } from './core-connector-svc';
 
 Service.start();

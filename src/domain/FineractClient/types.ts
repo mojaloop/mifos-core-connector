@@ -141,15 +141,6 @@ export type TFineractGetAccountResponse = {
     };
 };
 
-export type TRefundErrorDeps = {
-    message: string;
-    context: string;
-    refundDetails: {
-        amount: number;
-        fineractAccountId: number;
-    };
-};
-
 export type TFineractGetClientResponse = {
     id: number;
     accountNo: string;

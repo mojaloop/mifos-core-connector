@@ -30,12 +30,6 @@
 import { ResponseToolkit } from '@hapi/hapi';
 import { ResponseValue } from 'hapi';
 import {
-  AccountVerificationError,
-  InvalidAccountNumberError,
-  RefundFailedError,
-  UnSupportedIdTypeError,
-} from '../domain';
-import {
     FineractAccountInsufficientBalance,
     FineractAccountNotActiveError,
     FineractAccountNotFoundError,
@@ -55,21 +49,23 @@ import {
 // type ErrorResponseDetails = {
 //   message: string,
 //   status: string, // mlCode
-//   httpCode: number
+//   httpCode: number,
+//   details?: TJson
 // };
 // const getErrorDetails = (error: unknown): ErrorResponseDetails => {
 //   if (error instanceof BasicError) {
-//     const { message, mlCode = '', httpCode = 500 } = error;
+//     const { message, mlCode = '2000', httpCode = 500, details } = error;
 //     return {
 //       message,
 //       status: mlCode,
 //       httpCode
+//       details,
 //     };
 //   }
 //
 //   return {
 //     message: error instanceof Error ? error.message : 'Unknown Error',
-//     status: '',
+//     status: '2000',
 //     httpCode: 500
 //   };
 // };
@@ -80,26 +76,10 @@ export class BaseRoutes {
     }
 
     protected handleError(error: unknown, h: ResponseToolkit) {
-        // const { message, status, httpCode } = getErrorDetails(error);
-        // return h.response({ status, message }).code(httpCode);
+        // const { message, status, httpCode, details } = getErrorDetails(error);
+        // return h.response({ status, message, details }).code(httpCode);
 
-       if (error instanceof InvalidAccountNumberError) {
-            return h.response({ status: '3101', message: 'Invalid Account Number provided' }).code(400);
-        } else if (error instanceof AccountVerificationError) {
-            return h
-                .response({
-                    status: '3200',
-                    message: error.message,
-                })
-                .code(500);
-        } else if (error instanceof UnSupportedIdTypeError) {
-            return h
-                .response({
-                    status: '3100',
-                    message: 'Unsupported Id Type Error',
-                })
-                .code(500);
-        } else if (error instanceof FineractWithdrawFailedError) {
+       if (error instanceof FineractWithdrawFailedError) {
             return h.response({ status: '4000', message: 'Fineract Withdrawal Error' }).code(500);
         } else if (error instanceof SearchFineractAccountError) {
             return h.response({ status: '3200', message: 'Search Fineract Account Error' }).code(500);
@@ -123,11 +103,6 @@ export class BaseRoutes {
             return h.response({ status: '2000', message: 'SDK Client continue transfer error' }).code(500);
         } else if (error instanceof SDKClientInitiateTransferError) {
             return h.response({ status: '2000', message: 'SDK Client initiate transfer error' }).code(500);
-        } else if (error instanceof RefundFailedError) {
-            // object returned to allow for reconciliation later
-            return h
-                .response({ status: '2001', message: 'Refund Failed Error', refundDetails: error.refundDetails })
-                .code(500);
         } else if (error instanceof FineractAccountInsufficientBalance) {
             return h.response({ status: '4001', message: 'Fineract Account Insufficient Balance' }).code(500);
         } else {

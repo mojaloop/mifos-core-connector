@@ -118,10 +118,7 @@ export class FineractClient implements IFineractClient {
             return await this.httpClient.send<TFineractTransactionResponse>({
                 url: url,
                 method: 'POST',
-                headers: {
-                    ...this.getDefaultHeaders(),
-                    'Content-Type': 'application/json',
-                },
+                headers: this.getDefaultHeaders(),
                 data: transferDeps.transaction,
             });
         } catch (error) {
@@ -175,9 +172,7 @@ export class FineractClient implements IFineractClient {
         return await this.httpClient.send<TFineractSearchResponse>({
             url: url,
             method: 'GET',
-            headers: {
-                ...this.getDefaultHeaders(),
-            },
+            headers: this.getDefaultHeaders(),
         });
     }
 
@@ -187,9 +182,7 @@ export class FineractClient implements IFineractClient {
         return await this.httpClient.send<TFineractGetAccountResponse>({
             url: url,
             method: 'GET',
-            headers: {
-                ...this.getDefaultHeaders(),
-            },
+            headers: this.getDefaultHeaders(),
         });
     }
 
@@ -197,13 +190,11 @@ export class FineractClient implements IFineractClient {
         return {
             'fineract-platform-tenantId': this.fineractConfig.FINERACT_TENANT_ID,
             Authorization: this.getAuthHeader(),
+            'Content-Type': 'application/json',
         };
     }
 
     private getAuthHeader(): string {
-        if (this.fineractConfig.FINERACT_AUTH_MODE == 'oauth') {
-            // return oauth request header
-        }
         return `Basic ${Buffer.from(`${this.fineractConfig.FINERACT_USERNAME}:${this.fineractConfig.FINERACT_PASSWORD}`).toString('base64')}`;
     }
 
@@ -213,9 +204,7 @@ export class FineractClient implements IFineractClient {
         return await this.httpClient.send<TFineractGetClientResponse>({
             url: url,
             method: 'GET',
-            headers: {
-                ...this.getDefaultHeaders(),
-            },
+            headers: this.getDefaultHeaders(),
         });
     }
 
@@ -229,10 +218,7 @@ export class FineractClient implements IFineractClient {
                 url,
                 transactionPayload.transaction,
                 {
-                    headers: {
-                        ...this.getDefaultHeaders(),
-                        'Content-Type': 'application/json',
-                    },
+                    headers: this.getDefaultHeaders(),
                 },
             );
         } catch (error) {
@@ -247,10 +233,7 @@ export class FineractClient implements IFineractClient {
 
         try {
             return await this.httpClient.get<TFineractGetChargeResponse>(url, {
-                headers: {
-                    ...this.getDefaultHeaders(),
-                    'Content-Type': 'application/json',
-                },
+                headers: this.getDefaultHeaders(),
             });
         } catch (error) {
             this.logger.error(error as Error);

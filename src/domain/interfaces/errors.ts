@@ -27,10 +27,12 @@
 
 'use strict';
 
+// todo: move this file from interface folder
 import { ILogger } from './infrastructure';
 import { loggerFactory } from '../../infra/logger';
-import { TRefundErrorDeps } from '../FineractClient';
+import { TJson } from './types';
 
+// todo: deprecated - use BasicError instead
 export class BaseError extends Error {
   constructor(message: string, context: string) {
     const logger: ILogger = loggerFactory({ context: context });
@@ -40,19 +42,23 @@ export class BaseError extends Error {
   }
 }
 
-// another approach with error class
 export type ErrorOptions = {
   cause?: Error;
-  httpCode?: number;
-  mlCode?: string
-  details?: unknown;
+  httpCode: number;
+  mlCode: string
+  details?: TJson;
 }
+
+type RefundDetails = {
+  amount: number;
+  fineractAccountId: number;
+};
 
 export class BasicError extends Error {
   cause?: Error;
   httpCode?: number;
   mlCode?: string; // Mojaloop error code
-  details?: unknown;
+  details?: TJson;
 
   constructor(message: string, options?: ErrorOptions) {
         super(message, options);
@@ -61,32 +67,37 @@ export class BasicError extends Error {
         this.httpCode = options?.httpCode;
         this.mlCode = options?.mlCode;
         this.details = options?.details;
-    }
+  }
 }
 
-export class InvalidAccountNumberError extends BasicError {
-    constructor(message = 'Account number length is too short', options?: ErrorOptions) {
-        super(message, {
-          ...options,
-          mlCode: '3101',
-          httpCode: 400
-        });
-    }
-}
+export class ValidationError extends BasicError {
+  static invalidAccountNumberError() {
+    return new ValidationError('Account number length is too short', {
+      mlCode: '3101',
+      httpCode: 400,
+    });
+  }
 
-export class AccountVerificationError extends BaseError {}
+  static accountVerificationError() {
+    return new ValidationError('Funds Source Account is not active in Fineract', {
+      mlCode: '3200',
+      httpCode: 400, // todo: think, which http code should be used here
+    });
+  }
 
-export class UnSupportedIdTypeError extends BaseError {}
+  static unsupportedIdTypeError() {
+    return new ValidationError('Unsupported Id Type', {
+      mlCode: '3100',
+      httpCode: 400,
+    });
+  }
 
-export class RefundFailedError extends BaseError {
-    readonly refundDetails: {
-        amount: number;
-        fineractAccountId: number;
-    };
-  // breaks Barbara Liskov's substitution principle!
-    constructor(deps: TRefundErrorDeps) {
-        super(deps.message, deps.context);
-        this.refundDetails = deps.refundDetails;
-        Object.setPrototypeOf(this, new.target.prototype);
-    }
+  // todo: move to a separate class
+  static refundFailedError(details: RefundDetails) {
+    return new ValidationError('Refund Failed', {
+      mlCode: '2001',
+      httpCode: 500,
+      details, // object returned to allow for reconciliation later
+    });
+  }
 }

@@ -21,7 +21,7 @@
     "start": "npm run start:no-build",
     "start:no-build": "node dist/src/index.js",
     "start:build": "npm run build && npm run start:no-build",
-    "start:dev": "ts-node -r tsconfig-paths/register -P ./tsconfig.json src/index.ts",
+    "start:dev": "ts-node -r tsconfig-paths/register -P ./tsconfig.json -r dotenv/config src/index.ts dotenv_config_path=.env.example",
     "start:watch": "nodemon --watch './src/**/*.ts' --exec 'ts-node' src/index.ts",
     "dep:check": "npx --no-install ncu -e 2",
     "dep:update": "npx --no-install ncu -u",
