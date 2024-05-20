@@ -27,7 +27,7 @@
 
 'use strict';
 
-import { IHTTPClient, ILogger, THttpResponse } from '../interfaces';
+import { AccountVerificationError, IHTTPClient, ILogger, THttpResponse } from '../interfaces';
 import {
     TLookupResponseInfo,
     TFineractConfig,
@@ -43,6 +43,7 @@ import {
     TFineractGetChargeResponse,
 } from './types';
 import {
+    FineractAccountDebitOrCreditBlockedError,
     FineractAccountNotActiveError,
     FineractAccountNotFoundError,
     FineractDepositFailedError,
@@ -101,7 +102,16 @@ export class FineractClient implements IFineractClient {
     async verifyBeneficiary(accountNo: string): Promise<TLookupResponseInfo> {
         // Fineract has no fees for deposits. Only calculating for withdraws.
         this.logger.info(`Calculating quote for party with account ${accountNo}`);
-        return await this.getAccountId(accountNo);
+
+        const getAccountIdRes = await this.getAccountId(accountNo);
+
+        const account = await this.getSavingsAccount(getAccountIdRes.accountId);
+        if (!account.data.status.active) {
+            throw new AccountVerificationError('Funds Destination Account is not active in Fineract', 'MFCC Agg');
+        } else if (account.data.subStatus.blockCredit) {
+            throw new FineractAccountDebitOrCreditBlockedError('Account blocked from credit', 'MFCC Agg');
+        }
+        return getAccountIdRes;
     }
 
     async receiveTransfer(transferDeps: TFineractTransferDeps): Promise<THttpResponse<TFineractTransactionResponse>> {

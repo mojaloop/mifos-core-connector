@@ -157,14 +157,6 @@ export class CoreConnectorAggregate {
             receiptNumber: randomUUID(),
             bankNumber: this.fineractConfig.FINERACT_BANK_ID,
         };
-        const account = await this.fineractClient.getSavingsAccount(res.accountId);
-        if (account.statusCode != 200) {
-            throw new FineractGetAccountWithIdError('Failed to retrieve destination account from fineract', 'MFCC Agg');
-        } else if (!account.data.status.active) {
-            throw new AccountVerificationError('Funds Destination Account is not active in Fineract', 'MFCC Agg');
-        } else if (account.data.subStatus.blockCredit) {
-            throw new FineractAccountDebitOrCreditBlockedError('Account blocked from credit', 'MFCC Agg');
-        }
         await this.fineractClient.receiveTransfer({
             accountId: res.accountId as number,
             transaction: transaction,
