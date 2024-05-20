@@ -29,46 +29,31 @@
 
 import { ResponseToolkit } from '@hapi/hapi';
 import { ResponseValue } from 'hapi';
-import {
-    FineractAccountInsufficientBalance,
-    FineractAccountNotActiveError,
-    FineractAccountNotFoundError,
-    FineractDepositFailedError,
-    FineractGetAccountWithIdError,
-    FineractGetChargesError,
-    FineractGetClientWithIdError,
-    FineractWithdrawFailedError,
-    SearchFineractAccountError,
-} from '../domain/FineractClient';
-import {
-    SDKClientContinueTransferError,
-    SDKClientInitiateTransferError,
-    SDKNoQuoteReturnedError,
-} from '../domain/SDKClient';
+import { BasicError, TJson } from '../domain';
 
-// type ErrorResponseDetails = {
-//   message: string,
-//   status: string, // mlCode
-//   httpCode: number,
-//   details?: TJson
-// };
-// const getErrorDetails = (error: unknown): ErrorResponseDetails => {
-//   if (error instanceof BasicError) {
-//     const { message, mlCode = '2000', httpCode = 500, details } = error;
-//     return {
-//       message,
-//       status: mlCode,
-//       httpCode
-//       details,
-//     };
-//   }
-//
-//   return {
-//     message: error instanceof Error ? error.message : 'Unknown Error',
-//     status: '2000',
-//     httpCode: 500
-//   };
-// };
+type ErrorResponseDetails = {
+  message: string,
+  status: string, // mlCode
+  httpCode: number,
+  details?: TJson
+};
+const getErrorDetails = (error: unknown): ErrorResponseDetails => {
+  if (error instanceof BasicError) {
+    const { message, mlCode = '2000', httpCode = 500, details } = error;
+    return {
+      message,
+      status: mlCode,
+      httpCode,
+      details,
+    };
+  }
+
+  return {
+    message: error instanceof Error ? error.message : 'Unknown Error',
+    status: '2000',
+    httpCode: 500
+  };
+};
 
 export class BaseRoutes {
     protected handleResponse(data: unknown, h: ResponseToolkit, statusCode: number = 200) {
@@ -76,37 +61,7 @@ export class BaseRoutes {
     }
 
     protected handleError(error: unknown, h: ResponseToolkit) {
-        // const { message, status, httpCode, details } = getErrorDetails(error);
-        // return h.response({ status, message, details }).code(httpCode);
-
-       if (error instanceof FineractWithdrawFailedError) {
-            return h.response({ status: '4000', message: 'Fineract Withdrawal Error' }).code(500);
-        } else if (error instanceof SearchFineractAccountError) {
-            return h.response({ status: '3200', message: 'Search Fineract Account Error' }).code(500);
-        } else if (error instanceof FineractAccountNotFoundError) {
-            return h.response({ status: '3200', message: 'Fineract Account Not Found' }).code(404);
-        } else if (error instanceof FineractGetAccountWithIdError) {
-            return h
-                .response({ status: '2000', message: 'Error encountered while getting fineract account by ID' })
-                .code(500);
-        } else if (error instanceof FineractAccountNotActiveError) {
-            return h.response({ status: '4000', message: 'Fineract Account not active' }).code(500);
-        } else if (error instanceof FineractGetClientWithIdError) {
-            return h.response({ status: '4000', message: 'Getting client by ID encountered error' }).code(500);
-        } else if (error instanceof FineractDepositFailedError) {
-            return h.response({ status: '4000', message: 'Fineract Deposit Failed' }).code(500);
-        } else if (error instanceof FineractGetChargesError) {
-            return h.response({ status: '4000', message: 'Fineract Get charges error ' }).code(500);
-        } else if (error instanceof SDKNoQuoteReturnedError) {
-            return h.response({ status: '3200', message: 'SDK Client No Quote Returned' }).code(500);
-        } else if (error instanceof SDKClientContinueTransferError) {
-            return h.response({ status: '2000', message: 'SDK Client continue transfer error' }).code(500);
-        } else if (error instanceof SDKClientInitiateTransferError) {
-            return h.response({ status: '2000', message: 'SDK Client initiate transfer error' }).code(500);
-        } else if (error instanceof FineractAccountInsufficientBalance) {
-            return h.response({ status: '4001', message: 'Fineract Account Insufficient Balance' }).code(500);
-        } else {
-            return h.response({ status: '4000', message: 'Unknown Error' }).code(500);
-        }
+        const { message, status, httpCode, details } = getErrorDetails(error);
+        return h.response({ status, message, details }).code(httpCode);
     }
 }

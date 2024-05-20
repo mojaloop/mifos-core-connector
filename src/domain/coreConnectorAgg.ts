@@ -47,21 +47,14 @@ import {
 } from './interfaces';
 import {
     ISDKClient,
-    SDKClientContinueTransferError,
-    SDKNoQuoteReturnedError,
+    SDKClientError,
     TFineractOutboundTransferRequest,
     TFineractOutboundTransferResponse,
     TSDKOutboundTransferRequest,
     TtransferContinuationResponse,
     TUpdateTransferDeps,
 } from './SDKClient';
-import {
-    FineractGetAccountWithIdError,
-    FineractAccountInsufficientBalance,
-    FineractWithdrawFailedError,
-    SearchFineractAccountError,
-    FineractAccountDebitOrCreditBlockedError,
-} from './FineractClient';
+import { FineractError } from './FineractClient';
 
 export class CoreConnectorAggregate {
     public IdType: string;
@@ -144,7 +137,9 @@ export class CoreConnectorAggregate {
         };
         const accountData = await this.getSavingsAccount(res.accountId);
         if (accountData.subStatus.blockCredit) {
-            throw new FineractAccountDebitOrCreditBlockedError('Account blocked from credit', 'MFCC Agg');
+            const errMessage = 'Account blocked from credit';
+            this.logger.warn(errMessage, accountData);
+            throw FineractError.accountDebitOrCreditBlockedError(errMessage);
         }
 
         await this.fineractClient.receiveTransfer({
@@ -162,12 +157,14 @@ export class CoreConnectorAggregate {
         this.logger.info(`Transfer from fineract account with ID${transfer.from.fineractAccountId}`);
         const accountData = await this.getSavingsAccount(transfer.from.fineractAccountId);
         if (accountData.subStatus.blockCredit || accountData.subStatus.blockDebit) {
-            throw new FineractAccountDebitOrCreditBlockedError('Account blocked from credit or debit', 'MFCC Agg');
+            const errMessage = 'Account blocked from credit or debit';
+            this.logger.warn(errMessage, accountData);
+            throw FineractError.accountDebitOrCreditBlockedError(errMessage);
         }
         const sdkOutboundTransfer: TSDKOutboundTransferRequest = this.getSDKTransferRequest(transfer);
         const transferRes = await this.sdkClient.initiateTransfer(sdkOutboundTransfer);
         if (!transferRes.data.quoteResponse) {
-            throw new SDKNoQuoteReturnedError('Quote response is not defined', 'MFCC Agg');
+            throw SDKClientError.noQuoteReturnedError();
         }
         const totalFineractFee = await this.fineractClient.calculateWithdrawQuote({
             amount: this.getAmountSum([
@@ -177,10 +174,8 @@ export class CoreConnectorAggregate {
             ]),
         });
         if (!this.checkAccountBalance(totalFineractFee.feeAmount, accountData.summary.availableBalance)) {
-            throw new FineractAccountInsufficientBalance(
-                'Payer account does not have sufficient funds for transfer',
-                'MFCC Agg',
-            );
+            this.logger.warn('Payer account does not have sufficient funds for transfer', accountData);
+            throw FineractError.accountInsufficientBalanceError();
         }
 
         return {
@@ -195,12 +190,10 @@ export class CoreConnectorAggregate {
         );
 
         try {
-            const withdrawRes = await this.fineractClient.sendTransfer(await this.getTransaction(transferAccept));
+            const transaction = await this.getTransaction(transferAccept)
+            const withdrawRes = await this.fineractClient.sendTransfer(transaction);
             if (withdrawRes.statusCode != 200) {
-                throw new FineractWithdrawFailedError(
-                    `Withdraw failed with status code ${withdrawRes.statusCode}`,
-                    'MFCC Agg',
-                );
+                throw FineractError.withdrawFailedError(`Withdraw failed with status code ${withdrawRes.statusCode}`);
             }
 
             const updateTransferRes = await this.sdkClient.updateTransfer(
@@ -210,22 +203,7 @@ export class CoreConnectorAggregate {
 
             return updateTransferRes.data;
         } catch (error: unknown) {
-            const errMessage = error instanceof Error ? error.message : 'Unknown error';
-            this.logger.error(`error in updateSentTransfer: ${errMessage}`, { error, transferAccept });
-
-            if (error instanceof SDKClientContinueTransferError) {
-                //Refund the money
-                const depositRes = await this.fineractClient.receiveTransfer(await this.getTransaction(transferAccept));
-                if (depositRes.statusCode != 200) {
-                    const details = {
-                        amount: parseFloat(transferAccept.fineractTransaction.totalAmount.toString()),
-                        fineractAccountId: transferAccept.fineractTransaction.fineractAccountId,
-                    };
-                    this.logger.warn('refundFailedError', { details, transferAccept });
-                    throw ValidationError.refundFailedError(details);
-                }
-            }
-            throw error;
+            return await this.processUpdateSentTransferError(error, transferAccept);
         }
     }
 
@@ -278,9 +256,6 @@ export class CoreConnectorAggregate {
         this.logger.debug('getting active savingsAccount...', { accountId });
         const account = await this.fineractClient.getSavingsAccount(accountId);
 
-        if (account.statusCode != 200) {
-            throw new FineractGetAccountWithIdError('Failed to retrieve source account from fineract', 'MFCC Agg');
-        }
         if (!account.data.status.active) {
             throw ValidationError.accountVerificationError();
         }
@@ -294,12 +269,6 @@ export class CoreConnectorAggregate {
             transferAccept.fineractTransaction.fineractAccountId,
         );
 
-        if (accountRes.statusCode != 200) {
-            throw new SearchFineractAccountError(
-                `Search for Account failed with status code ${accountRes.statusCode}`,
-                'MFCC Agg',
-            );
-        }
         const date = new Date();
         return {
             accountId: transferAccept.fineractTransaction.fineractAccountId,
@@ -315,5 +284,37 @@ export class CoreConnectorAggregate {
                 bankNumber: transferAccept.fineractTransaction.bankNumber,
             },
         };
+    }
+
+    // todo: add unit-tests!  think better way to handle refunding
+    private async processUpdateSentTransferError(error: unknown, transferAccept: TUpdateTransferDeps): Promise<never> {
+        let needRefund = error instanceof SDKClientError;
+        try {
+            const errMessage = error instanceof Error ? error.message : 'Unknown error';
+            this.logger.error(`error in updateSentTransfer: ${errMessage}`, { error, needRefund, transferAccept });
+            if (!needRefund) throw error;
+
+            // todo: pass this transaction from updateSentTransfer method
+            const transaction = await this.getTransaction(transferAccept); // is it the same transaction we got at the beginning of updateSentTransfer?
+            //Refund the money
+            const depositRes = await this.fineractClient.receiveTransfer(transaction);
+            if (depositRes.statusCode != 200) {
+                const logMessage = `Invalid statusCode from fineractClient.receiveTransfer: ${depositRes.statusCode}`;
+                this.logger.warn(logMessage);
+                throw new Error(logMessage);
+            }
+            needRefund = false
+            this.logger.info('Refund successful', { needRefund });
+            throw error;
+        } catch (err: unknown) {
+            if (!needRefund) throw error;
+
+            const details = {
+                amount: transferAccept.fineractTransaction.totalAmount,
+                fineractAccountId: transferAccept.fineractTransaction.fineractAccountId,
+            };
+            this.logger.error('refundFailedError', { details, transferAccept });
+            throw ValidationError.refundFailedError(details);
+        }
     }
 }

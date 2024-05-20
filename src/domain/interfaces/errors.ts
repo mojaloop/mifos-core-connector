@@ -28,24 +28,12 @@
 'use strict';
 
 // todo: move this file from interface folder
-import { ILogger } from './infrastructure';
-import { loggerFactory } from '../../infra/logger';
 import { TJson } from './types';
-
-// todo: deprecated - use BasicError instead
-export class BaseError extends Error {
-  constructor(message: string, context: string) {
-    const logger: ILogger = loggerFactory({ context: context });
-    super(message);
-    logger.error(message);
-    Object.setPrototypeOf(this, new.target.prototype);
-  }
-}
 
 export type ErrorOptions = {
   cause?: Error;
   httpCode: number;
-  mlCode: string
+  mlCode?: string
   details?: TJson;
 }
 
