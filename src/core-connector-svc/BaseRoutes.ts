@@ -32,27 +32,27 @@ import { ResponseValue } from 'hapi';
 import { BasicError, TJson } from '../domain';
 
 type ErrorResponseDetails = {
-  message: string,
-  status: string, // mlCode
-  httpCode: number,
-  details?: TJson
+    message: string;
+    status: string; // mlCode
+    httpCode: number;
+    details?: TJson;
 };
 const getErrorDetails = (error: unknown): ErrorResponseDetails => {
-  if (error instanceof BasicError) {
-    const { message, mlCode = '2000', httpCode = 500, details } = error;
-    return {
-      message,
-      status: mlCode,
-      httpCode,
-      details,
-    };
-  }
+    if (error instanceof BasicError) {
+        const { message, mlCode = '2000', httpCode = 500, details } = error;
+        return {
+            message,
+            status: mlCode,
+            httpCode,
+            details,
+        };
+    }
 
-  return {
-    message: error instanceof Error ? error.message : 'Unknown Error',
-    status: '2000',
-    httpCode: 500
-  };
+    return {
+        message: error instanceof Error ? error.message : 'Unknown Error',
+        status: '2000',
+        httpCode: 500,
+    };
 };
 
 export class BaseRoutes {

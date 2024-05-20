@@ -3,8 +3,8 @@ module.exports = {
     testEnvironment: 'node',
     setupFiles: ['<rootDir>/test/setup.ts'],
     clearMocks: true,
-    coveragePathIgnorePatterns:['dist'],
-    coverageReporters: ['text', ['json', {file: 'integration-final.json'}]],
+    coveragePathIgnorePatterns: ['dist'],
+    coverageReporters: ['text', ['json', { file: 'integration-final.json' }]],
     coverageDirectory: './coverage/',
     // coverageThreshold: {
     //     "global": {

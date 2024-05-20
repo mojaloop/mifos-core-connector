@@ -29,66 +29,66 @@
 import { BasicError } from '../interfaces';
 
 export class FineractError extends BasicError {
-  static withdrawFailedError(message: string) {
-    return new FineractError(message, {
-      httpCode: 500,
-      mlCode: '4000',
-    });
-  }
+    static withdrawFailedError(message: string) {
+        return new FineractError(message, {
+            httpCode: 500,
+            mlCode: '4000',
+        });
+    }
 
-  static searchAccountError(message: string) {
-    return new FineractError(message, {
-      httpCode: 500,
-      mlCode: '3200',
-    });
-  }
+    static searchAccountError(message: string) {
+        return new FineractError(message, {
+            httpCode: 500,
+            mlCode: '3200',
+        });
+    }
 
- static noAccountFoundError() {
-  return new FineractError('Fineract Account Not Found', {
-   httpCode: 404,
-   mlCode: '3200',
-  });
- }
+    static noAccountFoundError() {
+        return new FineractError('Fineract Account Not Found', {
+            httpCode: 404,
+            mlCode: '3200',
+        });
+    }
 
- static accountNotActiveError() {
-  return new FineractError('Fineract Account not active', {
-   httpCode: 500,
-   mlCode: '4000',
-  });
- }
+    static accountNotActiveError() {
+        return new FineractError('Fineract Account not active', {
+            httpCode: 500,
+            mlCode: '4000',
+        });
+    }
 
- static getClientWithIdError() {
-  return new FineractError('Failed to get client by clientId ', {
-   httpCode: 500,
-   mlCode: '4000',
-  });
- }
+    static getClientWithIdError() {
+        return new FineractError('Failed to get client by clientId ', {
+            httpCode: 500,
+            mlCode: '4000',
+        });
+    }
 
- static depositFailedError() {
-  return new FineractError('Fineract Deposit Failed', {
-   httpCode: 500,
-   mlCode: '4000',
-  });
- }
+    static depositFailedError() {
+        return new FineractError('Fineract Deposit Failed', {
+            httpCode: 500,
+            mlCode: '4000',
+        });
+    }
 
- static getChargesError() {
-  return new FineractError('Fineract Get charges error', {
-   httpCode: 500,
-   mlCode: '4000',
-  });
- }
+    static getChargesError() {
+        return new FineractError('Fineract Get charges error', {
+            httpCode: 500,
+            mlCode: '4000',
+        });
+    }
 
- static accountInsufficientBalanceError() {
-  return new FineractError('Fineract Account Insufficient Balance', {
-   httpCode: 500,
-   mlCode: '4001',
-  });
- }
+    static accountInsufficientBalanceError() {
+        return new FineractError('Fineract Account Insufficient Balance', {
+            httpCode: 500,
+            mlCode: '4001',
+        });
+    }
 
- static accountDebitOrCreditBlockedError(message: string) {
-  return new FineractError(message, {
-   httpCode: 500,
-   mlCode: '4400', // todo: or 5400
-  });
- }
+    static accountDebitOrCreditBlockedError(message: string) {
+        return new FineractError(message, {
+            httpCode: 500,
+            mlCode: '4400', // todo: or 5400
+        });
+    }
 }

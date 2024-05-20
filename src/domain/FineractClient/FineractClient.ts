@@ -44,7 +44,7 @@ import {
 } from './types';
 import { FineractError } from './errors';
 
-import { CHARGE_TIME_TYPES } from '../../constants'
+import { CHARGE_TIME_TYPES } from '../../constants';
 
 export const ROUTES = Object.freeze({
     search: 'search',

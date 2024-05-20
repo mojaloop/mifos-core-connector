@@ -26,9 +26,9 @@
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 
-import {CoreConnectorAggregate, ValidationError} from '../../../src/domain';
-import { FineractClientFactory } from '../../../src/domain/FineractClient';
-import {SDKClientError, SDKClientFactory} from '../../../src/domain/SDKClient';
+import { CoreConnectorAggregate, ValidationError } from '../../../src/domain';
+import { FineractClientFactory, IFineractClient } from '../../../src/domain/FineractClient';
+import { SDKClientError, SDKClientFactory } from '../../../src/domain/SDKClient';
 import { AxiosClientFactory } from '../../../src/infra/axiosHttpClient';
 import { loggerFactory } from '../../../src/infra/logger';
 import config from '../../../src/config';
@@ -40,66 +40,66 @@ const fineractConfig = config.get('fineract');
 const SDK_URL = 'http://localhost:4040';
 
 describe('CoreConnectorAggregate Tests -->', () => {
-  let ccAggregate: CoreConnectorAggregate;
-  let fineractClient: any;
+    let ccAggregate: CoreConnectorAggregate;
+    let fineractClient: IFineractClient;
 
-  beforeEach(() => {
-    mockAxios.reset();
-    const httpClient = AxiosClientFactory.createAxiosClientInstance();
-    const sdkClient = SDKClientFactory.getSDKClientInstance(logger, httpClient, SDK_URL);
-    fineractClient = FineractClientFactory.createClient({
-      fineractConfig,
-      httpClient,
-      logger,
-    });
-    ccAggregate = new CoreConnectorAggregate(fineractConfig, fineractClient, sdkClient, logger);
-  });
-
-  describe('updateSentTransfer Method Tests -->', () => {
     beforeEach(() => {
-      fineractClient.getSavingsAccount = jest.fn().mockResolvedValue({
-        statusCode: 200,
-        data: fixtures.fineractGetAccountResponseDto(),
-      });
-      fineractClient.sendTransfer = jest.fn().mockResolvedValue({
-        statusCode: 200,
-        data: fixtures.fineractTransactionResponseDto(),
-      });
-    });
-
-    test('should re-throw SDKClientError if sdkClient.updateTransfer() fails', async () => {
-      fineractClient.receiveTransfer = jest.fn().mockResolvedValue({
-        statusCode: 200,
-      });
-      const httpCode = 500;
-      mockAxios.onAny().reply(httpCode, {}); // mocking sdkClient.updateTransfer() failure
-
-      try {
-        await ccAggregate.updateSentTransfer(fixtures.transferAcceptDto());
-        throw new Error('Test failed');
-      } catch (err) {
-        expect(err).toBeInstanceOf(SDKClientError);
-        expect((err as SDKClientError).httpCode).toBe(httpCode);
-      }
-    });
-
-    test('should re-throw refundFailedError if fineractClient.receiveTransfer() fails', async () => {
-      fineractClient.receiveTransfer = jest.fn().mockResolvedValue({
-        statusCode: 500,
-      });
-
-      const transferAccept = fixtures.transferAcceptDto();
-      try {
-        await ccAggregate.updateSentTransfer(transferAccept);
-        throw new Error('Test failed');
-      } catch (err: any) {
-        expect(err).toBeInstanceOf(ValidationError);
-        const refundFailedError = ValidationError.refundFailedError({
-          amount: transferAccept.fineractTransaction.totalAmount,
-          fineractAccountId: transferAccept.fineractTransaction.fineractAccountId,
+        mockAxios.reset();
+        const httpClient = AxiosClientFactory.createAxiosClientInstance();
+        const sdkClient = SDKClientFactory.getSDKClientInstance(logger, httpClient, SDK_URL);
+        fineractClient = FineractClientFactory.createClient({
+            fineractConfig,
+            httpClient,
+            logger,
         });
-        expect(err).toEqual(refundFailedError);
-      }
+        ccAggregate = new CoreConnectorAggregate(fineractConfig, fineractClient, sdkClient, logger);
     });
-  });
+
+    describe('updateSentTransfer Method Tests -->', () => {
+        beforeEach(() => {
+            fineractClient.getSavingsAccount = jest.fn().mockResolvedValue({
+                statusCode: 200,
+                data: fixtures.fineractGetAccountResponseDto(),
+            });
+            fineractClient.sendTransfer = jest.fn().mockResolvedValue({
+                statusCode: 200,
+                data: fixtures.fineractTransactionResponseDto(),
+            });
+        });
+
+        test('should re-throw SDKClientError if sdkClient.updateTransfer() fails', async () => {
+            fineractClient.receiveTransfer = jest.fn().mockResolvedValue({
+                statusCode: 200,
+            });
+            const httpCode = 500;
+            mockAxios.onAny().reply(httpCode, {}); // mocking sdkClient.updateTransfer() failure
+
+            try {
+                await ccAggregate.updateSentTransfer(fixtures.transferAcceptDto());
+                throw new Error('Test failed');
+            } catch (err) {
+                expect(err).toBeInstanceOf(SDKClientError);
+                expect((err as SDKClientError)?.httpCode).toBe(httpCode);
+            }
+        });
+
+        test('should re-throw refundFailedError if fineractClient.receiveTransfer() fails', async () => {
+            fineractClient.receiveTransfer = jest.fn().mockResolvedValue({
+                statusCode: 500,
+            });
+
+            const transferAccept = fixtures.transferAcceptDto();
+            try {
+                await ccAggregate.updateSentTransfer(transferAccept);
+                throw new Error('Test failed');
+            } catch (err: unknown) {
+                expect(err).toBeInstanceOf(ValidationError);
+                const refundFailedError = ValidationError.refundFailedError({
+                    amount: transferAccept.fineractTransaction.totalAmount,
+                    fineractAccountId: transferAccept.fineractTransaction.fineractAccountId,
+                });
+                expect(err).toEqual(refundFailedError);
+            }
+        });
+    });
 });

@@ -48,7 +48,9 @@ export class SDKClient implements ISDKClient {
         this.SDK_SCHEME_ADAPTER_BASE_URL = deps.schemeAdapterUrl;
     }
 
-    async initiateTransfer(transfer: TSDKOutboundTransferRequest): Promise<THttpResponse<TSDKOutboundTransferResponse>> {
+    async initiateTransfer(
+        transfer: TSDKOutboundTransferRequest,
+    ): Promise<THttpResponse<TSDKOutboundTransferResponse>> {
         this.logger.info('SDKClient initiate receiveTransfer', transfer);
         try {
             const res = await this.httpClient.post<TSDKOutboundTransferRequest, TSDKOutboundTransferResponse>(
@@ -87,10 +89,10 @@ export class SDKClient implements ISDKClient {
                 },
             );
             if (res.statusCode != 200) {
-              const { statusCode, data, error} = res;
-              const errMessage = 'SDKClient initiate update receiveTransfer error: failed with wrong statusCode';
-              this.logger.warn(errMessage, { statusCode, data, error });
-              throw SDKClientError.continueTransferError(errMessage, { httpCode: statusCode });
+                const { statusCode, data, error } = res;
+                const errMessage = 'SDKClient initiate update receiveTransfer error: failed with wrong statusCode';
+                this.logger.warn(errMessage, { statusCode, data, error });
+                throw SDKClientError.continueTransferError(errMessage, { httpCode: statusCode });
             }
             return res;
         } catch (error: unknown) {

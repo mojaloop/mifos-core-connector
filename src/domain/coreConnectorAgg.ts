@@ -34,7 +34,8 @@ import {
     PartyType,
     TFineractConfig,
     TFineractTransactionPayload,
-    TFineractTransferDeps, TFineractGetAccountResponse,
+    TFineractTransferDeps,
+    TFineractGetAccountResponse,
 } from './FineractClient/types';
 import {
     ILogger,
@@ -190,7 +191,7 @@ export class CoreConnectorAggregate {
         );
 
         try {
-            const transaction = await this.getTransaction(transferAccept)
+            const transaction = await this.getTransaction(transferAccept);
             const withdrawRes = await this.fineractClient.sendTransfer(transaction);
             if (withdrawRes.statusCode != 200) {
                 throw FineractError.withdrawFailedError(`Withdraw failed with status code ${withdrawRes.statusCode}`);
@@ -303,7 +304,7 @@ export class CoreConnectorAggregate {
                 this.logger.warn(logMessage);
                 throw new Error(logMessage);
             }
-            needRefund = false
+            needRefund = false;
             this.logger.info('Refund successful', { needRefund });
             throw error;
         } catch (err: unknown) {
