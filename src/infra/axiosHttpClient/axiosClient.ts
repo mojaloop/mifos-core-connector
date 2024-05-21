@@ -31,11 +31,11 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { IHTTPClient, ILogger, THttpClientDeps, THttpRequestOptions, THttpResponse, TJson } from '../../domain';
 
 export class AxiosHTTPClient implements IHTTPClient {
-    axios: AxiosInstance;
+    private readonly axios: AxiosInstance;
     private readonly logger: ILogger;
 
     constructor(deps: THttpClientDeps) {
-        this.axios = axios.create(deps.options);
+        this.axios = axios.create(deps.options); // todo: move to deps
         this.logger = deps.logger.child({ context: this.constructor.name });
     }
 

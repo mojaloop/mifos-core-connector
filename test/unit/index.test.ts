@@ -48,7 +48,7 @@ const coreConnectorAggregate = new CoreConnectorAggregate(fineractConfig, finera
 
 const IBAN = 'UG680720000289000000006';
 
-jest.setTimeout(50000);
+jest.setTimeout(20_000);
 
 describe('Core Connector Aggregate Unit Tests', () => {
     test('Aggregate Get Parties. Should return status code 200 for an existent account', async () => {

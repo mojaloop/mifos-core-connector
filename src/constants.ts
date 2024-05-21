@@ -1,0 +1,8 @@
+export const CHARGE_TIME_TYPES = {
+    Disbursement: 1,
+    SpecifiedDueDate: 2,
+    SavingsActivation: 3,
+    Withdrawal: 5,
+    AnnualFee: 6,
+    MonthlyFee: 7,
+} as const;

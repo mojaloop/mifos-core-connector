@@ -138,7 +138,7 @@ paths:
                                     message:
                                         type: string
                                         example: "Failed to Withdraw funds"
-                                    refundDetails:
+                                    details:
                                         type: object
                                         properties:
                                             amount:

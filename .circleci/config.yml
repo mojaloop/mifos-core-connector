@@ -126,6 +126,8 @@ jobs:
           paths:
             - ./docker-image-local.tar
 
+  # todo: add unit tests
+
   test-functional:
     executor: default-machine
     steps:
@@ -186,17 +188,12 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            cp env.sh.example env.sh
-            chmod +x env.sh
             nvm install
             nvm use
             npm install
       - run:
           name: Execute Functional Tests
-          command: |
-            source env.sh
-            echo $FINERACT_BASE_URL || "NO VARIABLE SET"
-            npm run test:functional
+          command: npm run test:functional
       - run:
           name: Stop docker-compose TTK backend
           command: |

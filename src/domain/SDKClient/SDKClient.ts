@@ -35,7 +35,7 @@ import {
     TSDKOutboundTransferResponse,
 } from './types';
 import { IHTTPClient, ILogger, THttpResponse } from '../interfaces';
-import { SDKClientContinueTransferError, SDKClientInitiateTransferError } from './errors';
+import { SDKClientError } from './errors';
 
 export class SDKClient implements ISDKClient {
     private readonly logger: ILogger;
@@ -51,7 +51,7 @@ export class SDKClient implements ISDKClient {
     async initiateTransfer(
         transfer: TSDKOutboundTransferRequest,
     ): Promise<THttpResponse<TSDKOutboundTransferResponse>> {
-        this.logger.info('SDKClient initiate receiveTransfer %s', transfer);
+        this.logger.info('SDKClient initiate receiveTransfer', transfer);
         try {
             const res = await this.httpClient.post<TSDKOutboundTransferRequest, TSDKOutboundTransferResponse>(
                 `${this.SDK_SCHEME_ADAPTER_BASE_URL}/transfers`,
@@ -63,13 +63,13 @@ export class SDKClient implements ISDKClient {
                 },
             );
             if (res.statusCode != 200) {
-                this.logger.error('SDKClient initiate receiveTransfer failed.', res);
-                throw new SDKClientInitiateTransferError('SDKClient initiate receiveTransfer failed.', 'SDK');
+                throw new Error(`Invalid response statusCode: ${res.statusCode}`);
             }
             return res;
-        } catch (error) {
-            this.logger.error(error as Error);
-            throw new SDKClientInitiateTransferError((error as Error).message, 'SDK');
+        } catch (error: unknown) {
+            const errMessage = (error as Error).message || 'Unknown Error';
+            this.logger.error(`error in initiateTransfer: ${errMessage}`);
+            throw SDKClientError.initiateTransferError(errMessage);
         }
     }
 
@@ -89,13 +89,17 @@ export class SDKClient implements ISDKClient {
                 },
             );
             if (res.statusCode != 200) {
-                this.logger.error('SDKClient initiate update receiveTransfer failed.', res);
-                throw new SDKClientContinueTransferError('SDKClient initiate update receiveTransfer failed.', 'SDK');
+                const { statusCode, data, error } = res;
+                const errMessage = 'SDKClient initiate update receiveTransfer error: failed with wrong statusCode';
+                this.logger.warn(errMessage, { statusCode, data, error });
+                throw SDKClientError.continueTransferError(errMessage, { httpCode: statusCode });
             }
             return res;
-        } catch (error) {
-            this.logger.error(error as Error);
-            throw new SDKClientContinueTransferError((error as Error).message, 'SDK');
+        } catch (error: unknown) {
+            if (error instanceof SDKClientError) throw error;
+            const errMessage = `SDKClient initiate update receiveTransfer error: ${(error as Error)?.message}`;
+            this.logger.error(errMessage, { error });
+            throw SDKClientError.continueTransferError(errMessage);
         }
     }
 }

@@ -27,10 +27,29 @@
 
 'use strict';
 
-import { BaseError } from '../interfaces';
+import { BasicError, ErrorOptions } from '../interfaces';
 
-export class SDKClientInitiateTransferError extends BaseError {}
+export class SDKClientError extends BasicError {
+    // think, if it's better to have a separate class
+    static continueTransferError(message: string, options?: ErrorOptions) {
+        const {
+          httpCode = 500,
+          mlCode = httpCode === 504 ? '2004' : '2001'
+        } = options || {};
+        return new SDKClientError(message, { mlCode, httpCode });
+    }
 
-export class SDKClientContinueTransferError extends BaseError {}
+    static initiateTransferError(message = 'InitiateTransferError') {
+        return new SDKClientError(message, {
+            httpCode: 500,
+            mlCode: '2000',
+        });
+    }
 
-export class SDKNoQuoteReturnedError extends BaseError {}
+    static noQuoteReturnedError() {
+        return new SDKClientError('Quote response is not defined', {
+            httpCode: 500,
+            mlCode: '3200',
+        });
+    }
+}

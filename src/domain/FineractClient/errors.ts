@@ -26,24 +26,69 @@
  ******/
 'use strict';
 
-import { BaseError } from '../interfaces';
+import { BasicError } from '../interfaces';
 
-export class FineractWithdrawFailedError extends BaseError {}
+export class FineractError extends BasicError {
+    static withdrawFailedError(message: string) {
+        return new FineractError(message, {
+            httpCode: 500,
+            mlCode: '4000',
+        });
+    }
 
-export class SearchFineractAccountError extends BaseError {}
+    static searchAccountError(message: string) {
+        return new FineractError(message, {
+            httpCode: 500,
+            mlCode: '3200',
+        });
+    }
 
-export class FineractAccountNotFoundError extends BaseError {}
+    static noAccountFoundError() {
+        return new FineractError('Fineract Account Not Found', {
+            httpCode: 404,
+            mlCode: '3200',
+        });
+    }
 
-export class FineractGetAccountWithIdError extends BaseError {}
+    static accountNotActiveError() {
+        return new FineractError('Fineract Account not active', {
+            httpCode: 500,
+            mlCode: '4000',
+        });
+    }
 
-export class FineractAccountNotActiveError extends BaseError {}
+    static getClientWithIdError() {
+        return new FineractError('Failed to get client by clientId ', {
+            httpCode: 500,
+            mlCode: '4000',
+        });
+    }
 
-export class FineractGetClientWithIdError extends BaseError {}
+    static depositFailedError() {
+        return new FineractError('Fineract Deposit Failed', {
+            httpCode: 500,
+            mlCode: '4000',
+        });
+    }
 
-export class FineractDepositFailedError extends BaseError {}
+    static getChargesError() {
+        return new FineractError('Fineract Get charges error', {
+            httpCode: 500,
+            mlCode: '4000',
+        });
+    }
 
-export class FineractGetChargesError extends BaseError {}
+    static accountInsufficientBalanceError() {
+        return new FineractError('Fineract Account Insufficient Balance', {
+            httpCode: 500,
+            mlCode: '4001',
+        });
+    }
 
-export class FineractAccountInsufficientBalance extends BaseError {}
-
-export class FineractAccountDebitOrCreditBlockedError extends BaseError {}
+    static accountDebitOrCreditBlockedError(message: string) {
+        return new FineractError(message, {
+            httpCode: 500,
+            mlCode: '4400', // todo: or 5400
+        });
+    }
+}

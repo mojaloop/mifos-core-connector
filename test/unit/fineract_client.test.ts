@@ -71,7 +71,8 @@ describe('fineract_client', () => {
         expect(res.data.accountNo).toEqual('Head Offic000000010');
     });
 
-    test.skip('fineract client - test receive payment - should pass with properly configure transaction', async () => {
+    // todo: move to integration tests
+    test.skip('fineract client - test recieve payment - should pass with properly configure transaction', async () => {
         const date = new Date();
         const res = await fineractClient.receiveTransfer({
             accountId: 1,
@@ -90,6 +91,7 @@ describe('fineract_client', () => {
         expect(res.statusCode).toEqual(200);
     });
 
+    // todo: move to integration tests
     test.skip('fineract client - test send transfer : should pass with properly configured transfer', async () => {
         const date = new Date();
         const res = await fineractClient.sendTransfer({

@@ -26,26 +26,28 @@
  ******/
 'use strict';
 
+import axios from 'axios';
+import MockAdapter from 'axios-mock-adapter';
 import {
+    ISDKClient,
     SDKClientFactory,
     TSDKOutboundTransferRequest,
     TSDKTransferContinuationRequest,
 } from '../../src/domain/SDKClient';
-import { loggerFactory } from '../../src/infra/logger';
 import { AxiosClientFactory } from '../../src/infra/axiosHttpClient';
-import MockAdapter from 'axios-mock-adapter';
+import { loggerFactory } from '../../src/infra/logger';
 
-const logger = loggerFactory({ context: 'sdk client' });
-let httpClient;
-httpClient = AxiosClientFactory.createAxiosClientInstance();
-const mocKAxios = new MockAdapter(httpClient.axios);
-const sdk_url = 'http://localhost:4040';
-const sdkClient = SDKClientFactory.getSDKClientInstance(logger, httpClient, sdk_url);
+const mockAxios = new MockAdapter(axios);
+const SDK_URL = 'http://localhost:4040';
+const logger = loggerFactory({ context: 'sdk client tests' });
 
 describe('SDK Scheme Adapter Unit Tests', () => {
+    let sdkClient: ISDKClient;
+
     beforeEach(() => {
-        mocKAxios.reset();
-        httpClient = AxiosClientFactory.createAxiosClientInstance();
+        mockAxios.reset();
+        const httpClient = AxiosClientFactory.createAxiosClientInstance();
+        sdkClient = SDKClientFactory.getSDKClientInstance(logger, httpClient, SDK_URL);
     });
 
     test('SDK-Scheme Adapter initiate receiveTransfer - should pass when given a receiveTransfer', async () => {
@@ -105,7 +107,7 @@ describe('SDK Scheme Adapter Unit Tests', () => {
         };
 
         // act
-        mocKAxios.onAny().reply(200, {});
+        mockAxios.onAny().reply(200, {});
         const res = await sdkClient.initiateTransfer(transfer);
 
         //assert
@@ -119,7 +121,7 @@ describe('SDK Scheme Adapter Unit Tests', () => {
         };
 
         //act
-        mocKAxios.onAny().reply(200, {});
+        mockAxios.onAny().reply(200, {});
         const res = await sdkClient.updateTransfer(continueTransfer, 1);
 
         // assert
