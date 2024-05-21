@@ -43,7 +43,6 @@ import {
     TFineractGetChargeResponse,
 } from './types';
 import {
-    FineractAccountDebitOrCreditBlockedError,
     FineractAccountNotActiveError,
     FineractAccountNotFoundError,
     FineractDepositFailedError,
@@ -149,8 +148,6 @@ export class FineractClient implements IFineractClient {
                 `Fineract Account not active ${JSON.stringify(getAccountRes)}`,
                 'FIN',
             );
-        } else if (getAccountRes.data.subStatus.blockCredit || getAccountRes.data.subStatus.blockDebit) {
-            throw new FineractAccountDebitOrCreditBlockedError('Account blocked from credit', 'MFCC Agg');
         }
         const currency = getAccountRes.data.currency.code;
         const getClientRes = await this.getClient(getAccountRes.data.clientId);

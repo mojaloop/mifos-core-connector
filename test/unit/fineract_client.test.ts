@@ -43,7 +43,7 @@ const fineractClient = FineractClientFactory.createClient({
 
 describe('fineract_client', () => {
     test('fineract client - test get account id from account No : should pass', async () => {
-        const account = await fineractClient.getAccountId('000000001');
+        const account = await fineractClient.getAccountId('000000006');
         expect(account).toBeTruthy();
     });
 
@@ -53,8 +53,8 @@ describe('fineract_client', () => {
     });
 
     test('fineract client - test perform account lookup. Should pass if account exists should pass', async () => {
-        const res = await fineractClient.lookupPartyInfo('000000001');
-        expect(res.data.accountNo).toContain('000000005');
+        const res = await fineractClient.lookupPartyInfo('000000006');
+        expect(res.data.accountNo).toContain('Head Offic000000010');
     });
 
     test('fineract client - test calculate quote - should pass with correct dependencies', async () => {
@@ -66,12 +66,12 @@ describe('fineract_client', () => {
     });
 
     test('fineract client - test verify beneficiary - should pass with valid beneficiary account', async () => {
-        const res = await fineractClient.verifyBeneficiary('000000001');
+        const res = await fineractClient.verifyBeneficiary('000000006');
 
-        expect(res.data.accountNo).toEqual('000000005');
+        expect(res.data.accountNo).toEqual('Head Offic000000010');
     });
 
-    test.skip('fineract client - test recieve payment - should pass with properly configure transaction', async () => {
+    test.skip('fineract client - test receive payment - should pass with properly configure transaction', async () => {
         const date = new Date();
         const res = await fineractClient.receiveTransfer({
             accountId: 1,
