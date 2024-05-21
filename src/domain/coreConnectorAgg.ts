@@ -136,12 +136,6 @@ export class CoreConnectorAggregate {
             receiptNumber: randomUUID(),
             bankNumber: this.fineractConfig.FINERACT_BANK_ID,
         };
-        const accountData = await this.getSavingsAccount(res.accountId);
-        if (accountData.subStatus.blockCredit) {
-            const errMessage = 'Account blocked from credit';
-            this.logger.warn(errMessage, accountData);
-            throw FineractError.accountDebitOrCreditBlockedError(errMessage);
-        }
 
         await this.fineractClient.receiveTransfer({
             accountId: res.accountId as number,
@@ -170,6 +164,7 @@ export class CoreConnectorAggregate {
         const totalFineractFee = await this.fineractClient.calculateWithdrawQuote({
             amount: this.getAmountSum([
                 parseFloat(transferRes.data.amount),
+                // todo: refactor to deal with missed payeeFspFee or payeeFspCommission
                 parseFloat(transferRes.data.quoteResponse.body.payeeFspFee?.amount as string),
                 parseFloat(transferRes.data.quoteResponse.body.payeeFspCommission?.amount as string),
             ]),

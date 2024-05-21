@@ -46,7 +46,7 @@ const fineractClient = FineractClientFactory.createClient({
 const sdkClient = SDKClientFactory.getSDKClientInstance(logger, httpClient, 'http://localhost:4040');
 const coreConnectorAggregate = new CoreConnectorAggregate(fineractConfig, fineractClient, sdkClient, logger);
 
-const IBAN = 'UG680720000289000000001';
+const IBAN = 'UG680720000289000000006';
 
 jest.setTimeout(20_000);
 
