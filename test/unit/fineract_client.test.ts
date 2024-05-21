@@ -48,7 +48,7 @@ describe('fineract_client', () => {
     });
 
     test('fineract client - test get account id from non existent account No: should fail ', async () => {
-        const account = fineractClient.getAccountId('abc');
+        const account = fineractClient.getAccountId('sbhsf');
         await expect(account).rejects.toThrow();
     });
 
