@@ -392,6 +392,18 @@ workflows:
                 - /feature*/
                 - /bugfix*/
 
+      - test-unit:
+          context: org-global
+          requires:
+            - setup
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore:
+                - /feature*/
+                - /bugfix*/
+
       - test-lint:
           context: org-global
           requires:
