@@ -27,7 +27,7 @@ paths:
                 '200':
                     $ref: '#/components/responses/transferSuccess'
                 '400':
-                    description: Invalid Account Submitted in Request Body
+                    description:  Invalid Account Submitted in Request Body
                     content:
                         application/json:
                             schema:
