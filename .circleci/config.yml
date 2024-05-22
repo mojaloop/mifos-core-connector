@@ -117,20 +117,20 @@ jobs:
           paths:
             - ./docker-image-local.tar
 
-    test-unit:
-      executor: default-docker
-      steps:
-        - run:
-            name: Install general dependencies
-            command: *defaults_Dependencies
-        - checkout
-        - run:
-            <<: *defaults_configure_nvm
-        - restore_cache:
-            key: dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
-        - run:
-            name: Execute unit tests
-            command: npm run test:unit
+  test-unit:
+    executor: default-docker
+    steps:
+      - run:
+          name: Install general dependencies
+          command: *defaults_Dependencies
+      - checkout
+      - run:
+          <<: *defaults_configure_nvm
+      - restore_cache:
+          key: dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
+      - run:
+          name: Execute unit tests
+          command: npm run test:unit
 
   test-functional:
     executor: default-machine
