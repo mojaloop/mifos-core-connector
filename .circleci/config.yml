@@ -36,15 +36,6 @@ defaults_Dependencies: &defaults_Dependencies |
   npm config set unsafe-perm true
   npm install -g node-gyp
 
-defaults_awsCliDependencies: &defaults_awsCliDependencies |
-    apk --no-cache add aws-cli
-
-defaults_license_scanner: &defaults_license_scanner
-  name: Install and set up license-scanner
-  command: |
-    git clone https://github.com/mojaloop/license-scanner /tmp/license-scanner
-    cd /tmp/license-scanner && make build default-files set-up
-
 defaults_export_version_from_package: &defaults_export_version_from_package
   name: Format the changelog into the github release body and get release tag
   command: |
@@ -126,7 +117,20 @@ jobs:
           paths:
             - ./docker-image-local.tar
 
-  # todo: add unit tests
+    test-unit:
+      executor: default-docker
+      steps:
+        - run:
+            name: Install general dependencies
+            command: *defaults_Dependencies
+        - checkout
+        - run:
+            <<: *defaults_configure_nvm
+        - restore_cache:
+            key: dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
+        - run:
+            name: Execute unit tests
+            command: npm run test:unit
 
   test-functional:
     executor: default-machine
@@ -154,7 +158,7 @@ jobs:
             docker compose down
       - store_artifacts:
           path: ./test/func/reports
-          prefix: test
+          destination: test
 
   test-dependencies:
     executor: default-docker
