@@ -52,7 +52,7 @@ export class DFSPCoreConnectorRoutes extends BaseRoutes {
             handlers: {
                 transfers: this.initiateTransfer.bind(this),
                 updateTransfer: this.updateInitiatedTransfer.bind(this),
-                validationFail: async (context, req, h) => h.response({ error: context.validation.errors }).code(400),
+                validationFail: async (context, req, h) => h.response({ error: context.validation.errors }).code(412),
                 notFound: async (context, req, h) => h.response({ error: 'Not found' }).code(404),
             },
         });

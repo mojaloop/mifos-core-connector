@@ -54,7 +54,7 @@ export class CoreConnectorRoutes extends BaseRoutes {
                 getParties: this.getParties.bind(this),
                 quoteRequests: this.quoteRequests.bind(this),
                 transfers: this.transfers.bind(this),
-                validationFail: async (context, req, h) => h.response({ error: context.validation.errors }).code(400),
+                validationFail: async (context, req, h) => h.response({ error: context.validation.errors }).code(412),
                 notFound: async (context, req, h) => h.response({ error: 'Not found' }).code(404),
             },
         });

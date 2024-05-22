@@ -27,19 +27,11 @@ paths:
                 '200':
                     $ref: '#/components/responses/transferSuccess'
                 '400':
-                    description: Malformed or missing required body, headers or parameters
+                    description: Invalid Account Submitted in Request Body
                     content:
                         application/json:
                             schema:
-                                type: object
-                                properties:
-                                    status:
-                                        type: string
-                                        example: "3200"
-                                    message:
-                                        type: string
-                                        example: "Account No Invalid"
-
+                                $ref: "#/components/schemas/InvalidAccountResponse"
                 '404':
                     description: Resource Not Found
                     content:
@@ -53,6 +45,12 @@ paths:
                                     message:
                                         type: string
                                         example: "Account Not Found"
+                '412':
+                    description: Malformed or missing required body, headers or parameters
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/BadRequesSchemaErrorResponse"
 
                 '500':
                     description: Internal Server Error
@@ -150,6 +148,48 @@ paths:
 
 components:
     schemas:
+        InvalidAccountResponse:
+            type: object
+            properties:
+                status:
+                    type: string
+                    example: "2000"
+                message:
+                    type: string
+                    example: "Funds Source Account is not active in Fineract"
+        BadRequesSchemaErrorResponse:
+            type: object
+            properties:
+                error:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/BadRequesSchemaErrorDetail'
+        BadRequesSchemaErrorDetail:
+            type: object
+            properties:
+                instancePath:
+                    type: string
+                    description: Path to the instance in the request that caused the error
+                    example: "/requestBody"
+                schemaPath:
+                    type: string
+                    description: Path to the schema that the instance failed to satisfy
+                    example: "#/properties/requestBody/required"
+                keyword:
+                    type: string
+                    description: Validation keyword that failed
+                    example: "required"
+                params:
+                    type: object
+                    properties:
+                        missingProperty:
+                            type: string
+                            description: Name of the missing property
+                            example: "to"
+                message:
+                    type: string
+                    description: Human-readable error message
+                    example: "must have required property 'to'"
         AmountType:
             title: AmountType
             type: string
