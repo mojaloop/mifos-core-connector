@@ -44,7 +44,7 @@ import {
 } from './types';
 import { FineractError } from './errors';
 
-import { CHARGE_TIME_TYPES } from '../../constants';
+import { CHARGE_APPLIES_TO, CHARGE_TIME_TYPES } from '../../constants';
 
 export const ROUTES = Object.freeze({
     search: 'search',
@@ -77,8 +77,10 @@ export class FineractClient implements IFineractClient {
         let fee = 0;
 
         charges.data.forEach((charge) => {
-            // todo: avoid "magic" numbers!
-            if (charge.chargeAppliesTo.id === 2 && charge.chargeTimeType.id === CHARGE_TIME_TYPES.Withdrawal) {
+            if (
+                charge.chargeAppliesTo.id === CHARGE_APPLIES_TO.Savings &&
+                charge.chargeTimeType.id === CHARGE_TIME_TYPES.Withdrawal
+            ) {
                 if (charge.chargeCalculationType.id === 1) {
                     fee = fee + charge.amount;
                 } else {
