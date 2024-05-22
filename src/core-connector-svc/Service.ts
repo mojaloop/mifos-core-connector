@@ -39,7 +39,7 @@ import { FineractClientFactory } from '../domain/FineractClient';
 import { SDKClientFactory } from '../domain/SDKClient';
 import { DFSPCoreConnectorRoutes } from './dfspCoreConnectorRoutes';
 
-const logger = loggerFactory({ context: 'MifosCC' });
+export const logger = loggerFactory({ context: 'MifosCC' });
 
 export class Service {
     static coreConnectorAggregate: CoreConnectorAggregate;
@@ -102,35 +102,3 @@ export class Service {
         logger.info('Service Stopped');
     }
 }
-
-// todo: refactor it and move to /src/index.ts
-async function _handle_int_and_term_signals(signal: NodeJS.Signals): Promise<void> {
-    logger.warn(`Service - ${signal} received - cleaning up...`);
-    let clean_exit = false;
-    setTimeout(() => {
-        clean_exit || process.abort();
-    }, 5000);
-
-    // call graceful stop routine
-    await Service.stop();
-
-    clean_exit = true;
-    process.exit();
-}
-
-//catches ctrl+c event
-process.on('SIGINT', _handle_int_and_term_signals.bind(this));
-//catches program termination event
-process.on('SIGTERM', _handle_int_and_term_signals.bind(this));
-
-//do something when app is closing
-/* istanbul ignore next */
-process.on('exit', async () => {
-    logger.info('Service - exiting...');
-});
-
-/* istanbul ignore next */
-process.on('uncaughtException', (err: Error) => {
-    logger.error(`UncaughtException: ${err?.message}`, err);
-    process.exit(999);
-});
