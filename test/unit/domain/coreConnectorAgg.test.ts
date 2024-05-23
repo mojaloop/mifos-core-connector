@@ -33,7 +33,6 @@ import { AxiosClientFactory } from '../../../src/infra/axiosHttpClient';
 import { loggerFactory } from '../../../src/infra/logger';
 import config from '../../../src/config';
 import * as fixtures from '../../fixtures';
-import { fineractLookUpPartyResponseDto, fineractVerifyBeneficiaryResponseDto } from '../../fixtures';
 import * as crypto from 'node:crypto';
 
 const mockAxios = new MockAdapter(axios);
