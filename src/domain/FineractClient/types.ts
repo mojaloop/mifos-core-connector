@@ -34,10 +34,6 @@ export type TFineractConfig = {
     FINERACT_LOCALE: string;
 };
 
-export type Payee = {
-    full_name: string; // todo: try to avoid using camelCase and snake_case across code
-};
-
 export enum FineractLookupStage {
     SEARCH = 'search',
     SAVINGSACCOUNT = 'savingsaccount',
