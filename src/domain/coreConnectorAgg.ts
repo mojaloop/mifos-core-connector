@@ -36,7 +36,7 @@ import {
     TFineractTransactionPayload,
     TFineractTransferDeps,
     TFineractGetAccountResponse,
-} from './FineractClient/types';
+} from './FineractClient';
 import {
     ILogger,
     TLookupPartyInfoResponse,
@@ -158,15 +158,18 @@ export class CoreConnectorAggregate {
         }
         const sdkOutboundTransfer: TSDKOutboundTransferRequest = this.getSDKTransferRequest(transfer);
         const transferRes = await this.sdkClient.initiateTransfer(sdkOutboundTransfer);
-        if (!transferRes.data.quoteResponse) {
+        if (
+            !transferRes.data.quoteResponse ||
+            !transferRes.data.quoteResponse.body.payeeFspCommission ||
+            !transferRes.data.quoteResponse.body.payeeFspFee
+        ) {
             throw SDKClientError.noQuoteReturnedError();
         }
         const totalFineractFee = await this.fineractClient.calculateWithdrawQuote({
             amount: this.getAmountSum([
                 parseFloat(transferRes.data.amount),
-                // todo: refactor to deal with missed payeeFspFee or payeeFspCommission
-                parseFloat(transferRes.data.quoteResponse.body.payeeFspFee?.amount as string),
-                parseFloat(transferRes.data.quoteResponse.body.payeeFspCommission?.amount as string),
+                parseFloat(transferRes.data.quoteResponse.body.payeeFspFee.amount),
+                parseFloat(transferRes.data.quoteResponse.body.payeeFspCommission.amount),
             ]),
         });
         if (!this.checkAccountBalance(totalFineractFee.feeAmount, accountData.summary.availableBalance)) {
