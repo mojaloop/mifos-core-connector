@@ -1,5 +1,6 @@
 import { TUpdateTransferDeps } from '../src/domain/SDKClient';
 import { TFineractGetAccountResponse, TFineractTransactionResponse } from '../src/domain/FineractClient';
+import * as crypto from 'node:crypto';
 
 type TransferAcceptInputDto = {
     fineractAccountId?: number;
@@ -11,19 +12,21 @@ export const transferAcceptDto = ({
     fineractAccountId = 1,
     totalAmount = 123.45,
     sdkTransferId = 999,
-}: TransferAcceptInputDto = {}): TUpdateTransferDeps => ({
-    fineractTransaction: {
-        fineractAccountId,
-        totalAmount,
-        routingCode: 'routingCode',
-        receiptNumber: 'receiptNumber',
-        bankNumber: 'bankNumber',
-    },
-    sdkTransferId,
-} as const);
+}: TransferAcceptInputDto = {}): TUpdateTransferDeps =>
+    ({
+        fineractTransaction: {
+            fineractAccountId,
+            totalAmount,
+            routingCode: 'routingCode',
+            receiptNumber: 'receiptNumber',
+            bankNumber: 'bankNumber',
+        },
+        sdkTransferId,
+    }) as const;
 
 // todo: make it configurable, add all required fields
-export const fineractGetAccountResponseDto = (): Partial<TFineractGetAccountResponse> => ({
+export const fineractGetAccountResponseDto = (): Partial<TFineractGetAccountResponse> =>
+    ({
         id: 'id',
         accountNo: 'accountNo',
         clientId: 123,
@@ -31,7 +34,8 @@ export const fineractGetAccountResponseDto = (): Partial<TFineractGetAccountResp
     }) as const;
 
 // todo: make it configurable,
-export const fineractTransactionResponseDto = (): TFineractTransactionResponse => ({
+export const fineractTransactionResponseDto = (): TFineractTransactionResponse =>
+    ({
         officeId: 1,
         clientId: 2,
         savingsId: 3,
@@ -42,4 +46,19 @@ export const fineractTransactionResponseDto = (): TFineractTransactionResponse =
             receiptNumber: 'receiptNumber',
             bankNumber: 'bankNumber',
         },
+    }) as const;
+
+export const fineractLookUpPartyResponseDto = () =>
+    ({
+        displayName: 'Dove Love',
+        firstname: 'Dove',
+        lastname: 'Love',
+    }) as const;
+
+export const fineractVerifyBeneficiaryResponseDto = () =>
+    ({
+        currency: 'UGX',
+        amount: '100',
+        quoteId: crypto.randomUUID(),
+        transactionId: crypto.randomUUID(),
     }) as const;

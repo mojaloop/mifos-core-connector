@@ -33,6 +33,8 @@ import { AxiosClientFactory } from '../../../src/infra/axiosHttpClient';
 import { loggerFactory } from '../../../src/infra/logger';
 import config from '../../../src/config';
 import * as fixtures from '../../fixtures';
+import { fineractLookUpPartyResponseDto, fineractVerifyBeneficiaryResponseDto } from '../../fixtures';
+import * as crypto from 'node:crypto';
 
 const mockAxios = new MockAdapter(axios);
 const logger = loggerFactory({ context: 'ccAgg tests' });
@@ -100,6 +102,85 @@ describe('CoreConnectorAggregate Tests -->', () => {
                 });
                 expect(err).toEqual(refundFailedError);
             }
+        });
+    });
+
+    describe('getParties Method Tests -->', () => {
+        beforeEach(() => {
+            fineractClient.lookupPartyInfo = jest.fn().mockResolvedValue({
+                statusCode: 200,
+                data: fixtures.fineractLookUpPartyResponseDto(),
+            });
+        });
+
+        test('should pass if data fineract.lookUpParty resolves', async () => {
+            const lookupRes = await ccAggregate.getParties('UG0000000008892343');
+            expect(lookupRes.data.firstName).toEqual('Dove');
+        });
+    });
+
+    describe('quoteRequest Method Tests', () => {
+        beforeEach(() => {
+            fineractClient.verifyBeneficiary = jest.fn().mockResolvedValue({
+                statusCode: 200,
+                data: fixtures.fineractVerifyBeneficiaryResponseDto(),
+            });
+        });
+
+        test('test quoteRequest should pass', async () => {
+            const IBAN = 'UG680720000289000000006';
+
+            const quoteRes = await ccAggregate.quoteRequest({
+                amount: '1000',
+                amountType: 'SEND',
+                currency: 'UGX',
+                from: {
+                    dateOfBirth: '2036-10-31',
+                    displayName: 'string',
+                    extensionList: [
+                        {
+                            key: 'string',
+                            value: 'string',
+                        },
+                    ],
+                    firstName: 'string',
+                    fspId: 'string',
+                    idSubValue: 'string',
+                    idType: 'MSISDN',
+                    idValue: 'string',
+                    lastName: 'string',
+                    merchantClassificationCode: 'string',
+                    middleName: 'string',
+                    type: 'CONSUMER',
+                },
+                initiator: 'PAYER',
+                initiatorType: 'CONSUMER',
+                note: 'string',
+                quoteId: 'adbdb5be-d359-300a-bbcf-60d25a2ef3f9',
+                subScenario: 'string',
+                to: {
+                    dateOfBirth: '2036-10-31',
+                    displayName: 'string',
+                    extensionList: [
+                        {
+                            key: 'string',
+                            value: 'string',
+                        },
+                    ],
+                    firstName: 'string',
+                    fspId: 'string',
+                    idSubValue: 'string',
+                    idType: 'IBAN',
+                    idValue: IBAN,
+                    lastName: 'string',
+                    merchantClassificationCode: 'string',
+                    middleName: 'string',
+                    type: 'CONSUMER',
+                },
+                transactionId: crypto.randomUUID(),
+                transactionType: 'TRANSFER',
+            });
+            expect(quoteRes.payeeFspFeeAmount).toEqual('0');
         });
     });
 });

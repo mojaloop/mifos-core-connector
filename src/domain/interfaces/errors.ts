@@ -27,7 +27,6 @@
 
 'use strict';
 
-// todo: move this file from interface folder
 import { TJson } from './types';
 
 export type ErrorOptions = {
