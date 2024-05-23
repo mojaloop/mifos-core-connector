@@ -187,9 +187,10 @@ export class CoreConnectorAggregate {
         this.logger.info(
             `Continuing transfer with id ${transferAccept.sdkTransferId} and account with id ${transferAccept.fineractTransaction.fineractAccountId}`,
         );
+        let transaction: TFineractTransferDeps | null = null;
 
         try {
-            const transaction = await this.getTransaction(transferAccept);
+            transaction = await this.getTransaction(transferAccept);
             const withdrawRes = await this.fineractClient.sendTransfer(transaction);
             if (withdrawRes.statusCode != 200) {
                 throw FineractError.withdrawFailedError(`Withdraw failed with status code ${withdrawRes.statusCode}`);
@@ -202,7 +203,8 @@ export class CoreConnectorAggregate {
 
             return updateTransferRes.data;
         } catch (error: unknown) {
-            return await this.processUpdateSentTransferError(error, transferAccept);
+            if (transaction) return await this.processUpdateSentTransferError(error, transaction);
+            throw error;
         }
     }
 
@@ -286,15 +288,12 @@ export class CoreConnectorAggregate {
     }
 
     // todo: add unit-tests!  think better way to handle refunding
-    private async processUpdateSentTransferError(error: unknown, transferAccept: TUpdateTransferDeps): Promise<never> {
+    private async processUpdateSentTransferError(error: unknown, transaction: TFineractTransferDeps): Promise<never> {
         let needRefund = error instanceof SDKClientError;
         try {
             const errMessage = error instanceof Error ? error.message : 'Unknown error';
-            this.logger.error(`error in updateSentTransfer: ${errMessage}`, { error, needRefund, transferAccept });
+            this.logger.error(`error in updateSentTransfer: ${errMessage}`, { error, needRefund, transaction });
             if (!needRefund) throw error;
-
-            // todo: pass this transaction from updateSentTransfer method
-            const transaction = await this.getTransaction(transferAccept); // is it the same transaction we got at the beginning of updateSentTransfer?
             //Refund the money
             const depositRes = await this.fineractClient.receiveTransfer(transaction);
             if (depositRes.statusCode != 200) {
@@ -309,10 +308,10 @@ export class CoreConnectorAggregate {
             if (!needRefund) throw error;
 
             const details = {
-                amount: transferAccept.fineractTransaction.totalAmount,
-                fineractAccountId: transferAccept.fineractTransaction.fineractAccountId,
+                amount: parseFloat(transaction.transaction.transactionAmount),
+                fineractAccountId: transaction.accountId,
             };
-            this.logger.error('refundFailedError', { details, transferAccept });
+            this.logger.error('refundFailedError', { details, transaction });
             throw ValidationError.refundFailedError(details);
         }
     }
