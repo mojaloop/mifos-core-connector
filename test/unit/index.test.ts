@@ -28,7 +28,7 @@ import { randomUUID } from 'crypto';
 import { AxiosClientFactory } from '../../src/infra/axiosHttpClient';
 import config from '../../src/config';
 import { FineractClientFactory } from '../../src/domain/FineractClient';
-import { TFineractConfig } from '../../src/domain/FineractClient/types';
+import { TFineractConfig } from '../../src/domain/FineractClient';
 import { loggerFactory } from '../../src/infra/logger';
 import { CoreConnectorAggregate, TQuoteRequest, TtransferRequest } from '../../src/domain';
 import { SDKClientFactory } from '../../src/domain/SDKClient';
@@ -55,12 +55,10 @@ describe('Core Connector Aggregate Unit Tests', () => {
         const res = await coreConnectorAggregate.getParties(IBAN);
         expect(res?.statusCode).toEqual(200);
     });
-
     test('Aggregate Get Parties with short IBAN. Should throw error because IBAN is too short', async () => {
         const res = coreConnectorAggregate.getParties('UG680720000289');
         await expect(res).rejects.toThrow();
     });
-
     test('Aggregate Qoute Request for withdraw. Should pass if account is active ', async () => {
         const quoteRequest: TQuoteRequest = {
             homeR2PTransactionId: 'string',

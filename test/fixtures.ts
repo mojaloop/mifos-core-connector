@@ -62,3 +62,9 @@ export const fineractVerifyBeneficiaryResponseDto = () =>
         quoteId: crypto.randomUUID(),
         transactionId: crypto.randomUUID(),
     }) as const;
+
+export const fineractGetAccountIdResponseDto = () => ({
+    accountId: 1,
+});
+
+export const fineractReceiveTransferResponseDto = () => true;

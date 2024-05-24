@@ -26,7 +26,7 @@
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 
-import { CoreConnectorAggregate, ValidationError } from '../../../src/domain';
+import { CoreConnectorAggregate, TtransferRequest, ValidationError } from '../../../src/domain';
 import { FineractClientFactory, IFineractClient } from '../../../src/domain/FineractClient';
 import { SDKClientError, SDKClientFactory } from '../../../src/domain/SDKClient';
 import { AxiosClientFactory } from '../../../src/infra/axiosHttpClient';
@@ -34,11 +34,13 @@ import { loggerFactory } from '../../../src/infra/logger';
 import config from '../../../src/config';
 import * as fixtures from '../../fixtures';
 import * as crypto from 'node:crypto';
+import { randomUUID } from 'crypto';
 
 const mockAxios = new MockAdapter(axios);
 const logger = loggerFactory({ context: 'ccAgg tests' });
 const fineractConfig = config.get('fineract');
 const SDK_URL = 'http://localhost:4040';
+const IBAN = 'UG680720000289000000006';
 
 describe('CoreConnectorAggregate Tests -->', () => {
     let ccAggregate: CoreConnectorAggregate;
@@ -127,8 +129,6 @@ describe('CoreConnectorAggregate Tests -->', () => {
         });
 
         test('test quoteRequest should pass', async () => {
-            const IBAN = 'UG680720000289000000006';
-
             const quoteRes = await ccAggregate.quoteRequest({
                 amount: '1000',
                 amountType: 'SEND',
@@ -180,6 +180,130 @@ describe('CoreConnectorAggregate Tests -->', () => {
                 transactionType: 'TRANSFER',
             });
             expect(quoteRes.payeeFspFeeAmount).toEqual('0');
+        });
+    });
+
+    describe('receiveTransfer method tests', () => {
+        beforeEach(() => {
+            fineractClient.getAccountId = jest.fn().mockResolvedValue({
+                statusCode: 200,
+                data: fixtures.fineractGetAccountIdResponseDto(),
+            });
+            fineractClient.receiveTransfer = jest.fn().mockResolvedValue({
+                statusCode: 200,
+                data: fixtures.fineractReceiveTransferResponseDto(),
+            });
+        });
+
+        test('test receive transfer should resolve', async () => {
+            const transfer: TtransferRequest = {
+                homeR2PTransactionId: 'string',
+                amount: '500',
+                amountType: 'SEND',
+                currency: 'NGN',
+                from: {
+                    dateOfBirth: '5704-02-29',
+                    displayName: 'string',
+                    extensionList: [
+                        {
+                            key: 'string',
+                            value: 'string',
+                        },
+                    ],
+                    firstName: 'string',
+                    fspId: 'string',
+                    idSubValue: 'string',
+                    idType: 'MSISDN',
+                    idValue: 'string',
+                    lastName: 'string',
+                    merchantClassificationCode: 'string',
+                    middleName: 'string',
+                    type: 'CONSUMER',
+                },
+                ilpPacket: {
+                    data: {
+                        amount: {
+                            amount: '500',
+                            currency: 'NGN',
+                        },
+                        payee: {
+                            partyIdInfo: {
+                                partyIdType: 'IBAN',
+                                partyIdentifier: IBAN,
+                            },
+                        },
+                        payer: {
+                            partyIdInfo: {
+                                partyIdType: 'MSISDN',
+                                partyIdentifier: '820323232',
+                            },
+                        },
+                        quoteId: '27653e60-e21c-1414-8a35-0b5b97d5abc7',
+                        transactionId: '9fe8c410-5b31-188f-858f-67cb6b308198',
+                        transactionType: {
+                            initiator: 'PAYER',
+                            initiatorType: 'CONSUMER',
+                            scenario: 'TRANSFER',
+                            subScenario: 'string',
+                        },
+                    },
+                },
+                note: 'string',
+                quote: {
+                    expiration: '5200-02-29T21:42:06.649-09:08',
+                    extensionList: [
+                        {
+                            key: 'string',
+                            value: 'string',
+                        },
+                    ],
+                    geoCode: {
+                        latitude: '90',
+                        longitude: '+6.06',
+                    },
+                    payeeFspCommissionAmount: '0.97',
+                    payeeFspCommissionAmountCurrency: 'NGN',
+                    payeeFspFeeAmount: '0',
+                    payeeFspFeeAmountCurrency: 'NGN',
+                    payeeReceiveAmount: '0',
+                    payeeReceiveAmountCurrency: 'NGN',
+                    quoteId: randomUUID(),
+                    transactionId: randomUUID(),
+                    transferAmount: '500',
+                    transferAmountCurrency: 'NGN',
+                },
+                quoteRequestExtensions: [
+                    {
+                        key: 'string',
+                        value: 'string',
+                    },
+                ],
+                subScenario: 'string',
+                to: {
+                    dateOfBirth: '3956-02-29',
+                    displayName: 'string',
+                    extensionList: [
+                        {
+                            key: 'string',
+                            value: 'string',
+                        },
+                    ],
+                    firstName: 'string',
+                    fspId: 'string',
+                    idSubValue: 'string',
+                    idType: 'IBAN',
+                    idValue: IBAN,
+                    lastName: 'string',
+                    merchantClassificationCode: 'string',
+                    middleName: 'string',
+                    type: 'CONSUMER',
+                },
+                transactionType: 'TRANSFER',
+                transferId: randomUUID(),
+                transactionRequestId: randomUUID(),
+            };
+            const res = await ccAggregate.receiveTransfer(transfer);
+            expect(res.transferState).toEqual('COMMITTED');
         });
     });
 });
