@@ -130,7 +130,7 @@ export class CoreConnectorAggregate {
             dateFormat: this.DATE_FORMAT,
             transactionDate: `${date.getDate()} ${date.getMonth() + 1} ${date.getFullYear()}`,
             transactionAmount: transfer.amount,
-            paymentTypeId: '1', // todo generate this id automatically
+            paymentTypeId: this.fineractConfig.FINERACT_PAYMENT_TYPE_ID,
             accountNumber: accountNo,
             routingCode: randomUUID(),
             receiptNumber: randomUUID(),
@@ -278,7 +278,7 @@ export class CoreConnectorAggregate {
                 dateFormat: this.DATE_FORMAT,
                 transactionDate: `${date.getDate()} ${date.getMonth() + 1} ${date.getFullYear()}`,
                 transactionAmount: transferAccept.fineractTransaction.totalAmount.toString(),
-                paymentTypeId: '1',
+                paymentTypeId: this.fineractConfig.FINERACT_PAYMENT_TYPE_ID,
                 accountNumber: accountRes.data.accountNo,
                 routingCode: transferAccept.fineractTransaction.routingCode,
                 receiptNumber: transferAccept.fineractTransaction.receiptNumber,

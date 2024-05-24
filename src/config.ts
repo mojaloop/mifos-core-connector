@@ -80,6 +80,12 @@ const config = Convict<IConfigSchema>({
             default: null, // required
             env: 'FINERACT_LOCALE',
         },
+        FINERACT_PAYMENT_TYPE_ID: {
+            doc: 'Payment Type Id to be used for Mojaloop Payments',
+            format: String,
+            default: null, // required
+            env: 'FINERACT_PAYMENT_TYPE_ID',
+        },
     },
     server: {
         SDK_SERVER_HOST: {

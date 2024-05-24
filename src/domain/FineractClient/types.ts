@@ -32,6 +32,7 @@ export type TFineractConfig = {
     FINERACT_CHECK_DIGITS: string;
     FINERACT_ID_TYPE: IdType;
     FINERACT_LOCALE: string;
+    FINERACT_PAYMENT_TYPE_ID: string;
 };
 
 export enum FineractLookupStage {
