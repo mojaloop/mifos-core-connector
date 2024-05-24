@@ -5,7 +5,7 @@
 import mlLogger from '@mojaloop/central-services-logger';
 import stringify from 'fast-safe-stringify';
 import { ILogger } from '../domain';
-import { TJson } from './httpClient';
+import { TJson } from '../domain';
 
 const makeLogString = (message: string, meta?: unknown) =>
     meta ? `${message} - ${typeof meta === 'object' ? stringify(meta) : meta}` : message;
