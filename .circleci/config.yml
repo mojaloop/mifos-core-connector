@@ -36,15 +36,6 @@ defaults_Dependencies: &defaults_Dependencies |
   npm config set unsafe-perm true
   npm install -g node-gyp
 
-defaults_awsCliDependencies: &defaults_awsCliDependencies |
-    apk --no-cache add aws-cli
-
-defaults_license_scanner: &defaults_license_scanner
-  name: Install and set up license-scanner
-  command: |
-    git clone https://github.com/mojaloop/license-scanner /tmp/license-scanner
-    cd /tmp/license-scanner && make build default-files set-up
-
 defaults_export_version_from_package: &defaults_export_version_from_package
   name: Format the changelog into the github release body and get release tag
   command: |
@@ -126,6 +117,21 @@ jobs:
           paths:
             - ./docker-image-local.tar
 
+  test-unit:
+    executor: default-docker
+    steps:
+      - run:
+          name: Install general dependencies
+          command: *defaults_Dependencies
+      - checkout
+      - run:
+          <<: *defaults_configure_nvm
+      - restore_cache:
+          key: dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
+      - run:
+          name: Execute unit tests
+          command: npm run test:unit
+
   test-functional:
     executor: default-machine
     steps:
@@ -152,7 +158,7 @@ jobs:
             docker compose down
       - store_artifacts:
           path: ./test/func/reports
-          prefix: test
+          destination: test
 
   test-dependencies:
     executor: default-docker
@@ -176,9 +182,9 @@ jobs:
       - attach_workspace:
           at: /tmp
       - run:
-          name: Start docker-compose TTK backend
+          name: Start Mock SDK Scheme Adapter API
           command: |
-            docker-compose -f ./test/func/ttk-docker-compose.yml up -d
+            docker-compose -f ./test/func/sdk-docker-compose.yml up -d
       - run:
           name: Wait for some time
           command: |
@@ -186,21 +192,16 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            cp env.sh.example env.sh
-            chmod +x env.sh
             nvm install
             nvm use
             npm install
       - run:
           name: Execute Functional Tests
-          command: |
-            source env.sh
-            echo $FINERACT_BASE_URL || "NO VARIABLE SET"
-            npm run test:functional
+          command: npm run test:functional
       - run:
           name: Stop docker-compose TTK backend
           command: |
-            docker-compose -f ./test/func/ttk-docker-compose.yml down
+            docker-compose -f ./test/func/sdk-docker-compose.yml down
 
   test-lint:
     executor: default-docker
@@ -380,6 +381,18 @@ workflows:
                 - /bugfix*/
 
       - test-func:
+          context: org-global
+          requires:
+            - setup
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore:
+                - /feature*/
+                - /bugfix*/
+
+      - test-unit:
           context: org-global
           requires:
             - setup

@@ -126,7 +126,7 @@ paths:
         '504':
           $ref: '#/components/responses/transferTimeout'
     get:
-      summary: Retrieves information for a specific transfer
+      summary: Retrieves information for a specific receiveTransfer
       description: >-
         The HTTP request `GET /transfers/{transferId}` is used to get
         information regarding a transfer created or requested earlier. The
@@ -144,7 +144,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/transferStatusResponse'
         '500':
-          description: An error occurred processing the transfer
+          description: An error occurred processing the receiveTransfer
           content:
             application/json:
               schema:
@@ -158,7 +158,7 @@ paths:
       tags:
         - BulkTransfers
       requestBody:
-        description: Bulk transfer request body
+        description: Bulk receiveTransfer request body
         content:
           application/json:
             schema:
@@ -175,7 +175,7 @@ paths:
           $ref: '#/components/responses/bulkTransferTimeout'
   '/bulkTransfers/{bulkTransferId}':
     get:
-      summary: Retrieves information for a specific bulk transfer
+      summary: Retrieves information for a specific bulk receiveTransfer
       description: >-
         The HTTP request `GET /bulkTransfers/{bulktTransferId}` is used to get
         information regarding a bulk transfer created or requested earlier. The
@@ -187,13 +187,13 @@ paths:
         - $ref: '#/components/parameters/bulkTransferId'
       responses:
         '200':
-          description: Bulk transfer information successfully retrieved
+          description: Bulk receiveTransfer information successfully retrieved
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/bulkTransferStatusResponse'
         '500':
-          description: An error occurred processing the bulk transfer
+          description: An error occurred processing the bulk receiveTransfer
           content:
             application/json:
               schema:
@@ -452,7 +452,7 @@ paths:
   /simpleTransfers:
     post:
       summary: Simple Transfers endpoint
-      description: is used to request a transfer
+      description: is used to request a receiveTransfer
       tags:
         - transfers
       operationId: SimpleTransfersPost
@@ -1082,7 +1082,7 @@ components:
       type: string
       pattern: '^[A-Za-z0-9-_]{43}$'
       maxLength: 48
-      description: Condition that must be attached to the transfer by the Payer.
+      description: Condition that must be attached to the receiveTransfer by the Payer.
     ExtensionList:
       title: ExtensionList
       type: object
@@ -1132,7 +1132,7 @@ components:
       type: string
       pattern: '^[A-Za-z0-9-_]{43}$'
       maxLength: 48
-      description: Fulfilment that must be attached to the transfer by the Payee.
+      description: Fulfilment that must be attached to the receiveTransfer by the Payee.
     TransferState:
       title: TransferState
       type: string
@@ -1360,7 +1360,7 @@ components:
         from:
           $ref: '#/components/schemas/transferParty'
         individualTransfers:
-          description: List of individual transfers in a bulk transfer.
+          description: List of individual transfers in a bulk receiveTransfer.
           type: array
           minItems: 1
           maxItems: 1000
@@ -1415,7 +1415,7 @@ components:
           maxItems: 1000
           items:
             $ref: '#/components/schemas/individualTransferResult'
-          description: List of individual transfer result in a bulk transfer response.
+          description: List of individual receiveTransfer result in a bulk receiveTransfer response.
     bulkTransferErrorResponse:
       allOf:
         - $ref: '#/components/schemas/errorResponse'
@@ -1561,7 +1561,7 @@ components:
           maxItems: 1000
           items:
             $ref: '#/components/schemas/individualQuoteResult'
-          description: List of individualQuoteResults in a bulk transfer response.
+          description: List of individualQuoteResults in a bulk receiveTransfer response.
     bulkQuoteErrorResponse:
       allOf:
         - $ref: '#/components/schemas/errorResponse'
@@ -2395,19 +2395,19 @@ components:
           schema:
             $ref: '#/components/schemas/errorTransferResponse'
     transferServerError:
-      description: An error occurred processing the transfer
+      description: An error occurred processing the receiveTransfer
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/errorTransferResponse'
     transferTimeout:
-      description: Timeout occurred processing the transfer
+      description: Timeout occurred processing the receiveTransfer
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/errorTransferResponse'
     bulkTransferSuccess:
-      description: Bulk transfer completed successfully
+      description: Bulk receiveTransfer completed successfully
       content:
         application/json:
           schema:
@@ -2419,13 +2419,13 @@ components:
           schema:
             $ref: '#/components/schemas/bulkTransferErrorResponse'
     bulkTransferServerError:
-      description: An error occurred processing the bulk transfer
+      description: An error occurred processing the bulk receiveTransfer
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/bulkTransferErrorResponse'
     bulkTransferTimeout:
-      description: Timeout occurred processing the bulk transfer
+      description: Timeout occurred processing the bulk receiveTransfer
       content:
         application/json:
           schema:

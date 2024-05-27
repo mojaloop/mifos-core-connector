@@ -25,9 +25,9 @@
  --------------
  ******/
 
- "use strict";
+'use strict';
 
-import { IHttpClient, ILogger, THttpResponse } from "../interfaces";
+import { IHTTPClient, ILogger, THttpResponse } from '../interfaces';
 import {
     TLookupResponseInfo,
     TFineractConfig,
@@ -35,265 +35,202 @@ import {
     TFineractGetAccountResponse,
     TFineractGetClientResponse,
     IFineractClient,
-    FineractLookupStage,
     TCalculateQuoteDeps,
     TCalculateQuoteResponse,
-    TFineracttransferDeps,
+    TFineractTransferDeps,
     TFineractTransactionResponse,
-} from "./types";
+    TFineractTransactionPayload,
+    TFineractGetChargeResponse,
+} from './types';
+import { FineractError } from './errors';
 
+import { CHARGE_APPLIES_TO, CHARGE_TIME_TYPES } from '../../constants';
 
 export const ROUTES = Object.freeze({
-    search: "search",
-    savingsAccount: "savingsaccounts",
-    clients: "clients"
+    search: 'search',
+    savingsAccount: 'savingsaccounts',
+    clients: 'clients',
+    charges: 'charges',
 });
 
-export class FineractClient implements IFineractClient{
+export class FineractClient implements IFineractClient {
     fineractConfig: TFineractConfig;
-    httpClient: IHttpClient;
+    httpClient: IHTTPClient;
     logger: ILogger;
 
-    constructor(
-        fineractConfig: TFineractConfig,
-        httpClient: IHttpClient,
-        logger: ILogger
-    ){
+    constructor(fineractConfig: TFineractConfig, httpClient: IHTTPClient, logger: ILogger) {
         this.fineractConfig = fineractConfig;
         this.httpClient = httpClient;
         this.logger = logger;
     }
 
-    // todo:  refactor - function is too big (hard to read), lots of code duplication
-    async lookupPartyInfo(accountNo: string):Promise<TLookupResponseInfo | undefined>{
+    async lookupPartyInfo(accountNo: string): Promise<TLookupResponseInfo> {
         this.logger.info(`Looking up party with account ${accountNo}`);
-        const res = await this.getAccountFineractIdWithAccountNo(accountNo);
-        return res;
+        return this.getAccountId(accountNo);
     }
 
-    async calculateQuote(quoteDeps: TCalculateQuoteDeps): Promise<TCalculateQuoteResponse | undefined>{
-        // Fineract has no fees for deposits
-        const accountNo = quoteDeps.accountNo.toString();
-        this.logger.info(`Calcuating quote for party with account ${accountNo}`);
-        const res = this.getAccountFineractIdWithAccountNo(quoteDeps.accountNo);
-        return res;
+    async calculateWithdrawQuote(quoteDeps: TCalculateQuoteDeps): Promise<TCalculateQuoteResponse> {
+        // Check this for documentation on charge schema. https://demo.mifos.io/api-docs/apiLive.htm#charges
+        this.logger.info(`Calculating quote `);
+        const charges = await this.getCharges();
 
+        let fee = 0;
+
+        charges.data.forEach((charge) => {
+            if (
+                charge.chargeAppliesTo.id === CHARGE_APPLIES_TO.Savings &&
+                charge.chargeTimeType.id === CHARGE_TIME_TYPES.Withdrawal
+            ) {
+                if (charge.chargeCalculationType.id === 1) {
+                    fee = fee + charge.amount;
+                } else {
+                    fee = fee + (charge.amount / 100) * quoteDeps.amount;
+                }
+            }
+        });
+
+        return {
+            feeAmount: fee,
+        };
     }
 
-    async transfer(transferDeps: TFineracttransferDeps): Promise<TFineractTransactionResponse | undefined>{
+    async verifyBeneficiary(accountNo: string): Promise<TLookupResponseInfo> {
+        // Fineract has no fees for deposits. Only calculating for withdraws.
+        this.logger.info(`Calculating quote for party with account ${accountNo}`);
+        return await this.getAccountId(accountNo);
+    }
+
+    async receiveTransfer(transferDeps: TFineractTransferDeps): Promise<THttpResponse<TFineractTransactionResponse>> {
         const accountNo = transferDeps.transaction.accountNumber.toString();
         const amount = transferDeps.transaction.transactionAmount.toString();
         this.logger.info(`Transaction for party with account ${accountNo} worth ${amount}`);
 
         try {
-            const transferRes = await this.sendTransfer(transferDeps);
-            if(!transferRes){
-                return;
-            }
-
-            return transferRes.data;
-
-        } catch (error) {
-            this.logger.error((error as Error).message);
-            return;
-        }
-
-    }
-
-    public async getAccountFineractIdWithAccountNo(accountNo: string): Promise<TLookupResponseInfo | undefined>{
-        let stage = FineractLookupStage.SEARCH;
-        try {
-            const res = await this.searchAccount(accountNo);
-            // check if res is defined
-            if(!res){
-                this.logger.error(`Search Account threw an Exception`);
-                return {
-                    data: undefined,
-                    status: 0,
-                    message: "Search Account threw an Exception",
-                    stage: FineractLookupStage.SEARCH,
-                    accountStatus: false,
-                };
-            }
-            // check status code
-            if(res.statusCode == 200 && res.data.length > 0){
-                stage = FineractLookupStage.SAVINGSACCOUNT; // todo: where do you use it?
-                const returnedEntity = res.data[0];
-                if(!returnedEntity){
-                    this.logger.warn(`Account Search in Fineract for account ${accountNo} Returned no Account`);
-                    return {
-                        data: undefined,
-                        message: `Account Search in Fineract for account ${accountNo} Returned no Account`,
-                        status: res.statusCode,
-                        stage: FineractLookupStage.SEARCH,
-                        accountStatus: false
-                    };
-                }
-                const getAccountRes = await this.getSavingsAccount(returnedEntity.entityId);
-                // check if res is defined
-                if(!getAccountRes){
-                    this.logger.error("Get Account threw an Exception");
-                    return {
-                        data: undefined,
-                        status: 0,
-                        message: "Get Account threw an Exception",
-                        stage: FineractLookupStage.SAVINGSACCOUNT,
-                        accountStatus: false
-                    };
-                }
-                if(getAccountRes.statusCode == 200){
-                    stage = FineractLookupStage.CLIENT; // todo: where do you use it?
-                    const currency = getAccountRes.data.currency.code;
-                    if(getAccountRes.data.status.active){
-                        const getClientRes = await this.getClient(getAccountRes.data.clientId);
-                        // check if res is defined
-                        if(!getClientRes){
-                            this.logger.error(`Get Client threw an Exception`);
-                            return {
-                                data: undefined,
-                                status: 0,
-                                message: "Get Client threw an Exception",
-                                stage: FineractLookupStage.CLIENT,
-                                accountStatus: false
-                            };
-                        }
-
-                        if(getClientRes.statusCode == 200){
-                            this.logger.info(`Got Client Details for account ${accountNo}`);
-                            return {
-                                accountId: returnedEntity.entityId,
-                                data: getClientRes.data,
-                                status: getClientRes.statusCode,
-                                message: `Got Client Details for account ${accountNo}`,
-                                stage: FineractLookupStage.CLIENT,
-                                currency: currency,
-                                accountStatus: true
-                            };
-                        }else{
-                            this.logger.error(`StatusCode not 200 for get ${ROUTES.clients}. Returned ${getClientRes.statusCode}`);
-                            return {
-                                data: undefined,
-                                message: `StatusCode not 200 for get ${ROUTES.clients}. Returned ${getClientRes.statusCode}`,
-                                status: getClientRes.statusCode,
-                                stage: FineractLookupStage.CLIENT,
-                                accountStatus: false
-                            };
-                        }
-                    }else{
-                        this.logger.error(`Account with Acc No ${getAccountRes.data.accountNo} not active`);
-                        return {
-                            data: undefined,
-                            message: `Account with Acc No ${getAccountRes.data.accountNo} not active`,
-                            status: getAccountRes.statusCode,
-                            stage: FineractLookupStage.SAVINGSACCOUNT,
-                            accountStatus: false
-                        };
-                    }
-                }else{
-                    this.logger.error(`StatusCode not 200 for get ${ROUTES.savingsAccount}. Returned ${getAccountRes.statusCode}`);
-                    return {
-                        data: undefined,
-                        message: `StatusCode not 200 for get ${ROUTES.savingsAccount}. Returned ${getAccountRes.statusCode}`,
-                        status: getAccountRes.statusCode,
-                        stage: FineractLookupStage.SAVINGSACCOUNT,
-                        accountStatus: false
-                    };
-                }
-
-            }else{
-                this.logger.error(`StatusCode not 200 or is empty for ${ROUTES.search}. Returned ${res.statusCode}`);
-                return {
-                    data: undefined,
-                    message: `StatusCode not 200 or is empty for ${ROUTES.search}. Returned ${res.statusCode}`,
-                    status: res.statusCode,
-                    stage: FineractLookupStage.SEARCH,
-                    accountStatus: false
-                };
-            }
-        } catch (error) {
-            const { message, stack } = error as Error;
-            // todo: always add your own log message
-            this.logger.error(`error on lookupPartyInfo: ${message}`, { stack });
-            return {
-                data: undefined,
-                message: (error as Error).message,
-                status: 0, // todo: what does it mean - status: 0?
-                stage: stage,
-                accountStatus: false
-            };
+            const url = `${this.fineractConfig.FINERACT_BASE_URL}/${ROUTES.savingsAccount}/${transferDeps.accountId}/transactions?command=deposit`;
+            this.logger.info(`Request to fineract ${url}`);
+            return await this.httpClient.send<TFineractTransactionResponse>({
+                url: url,
+                method: 'POST',
+                headers: this.getDefaultHeaders(),
+                data: transferDeps.transaction,
+            });
+        } catch (error: unknown) {
+            this.logger.error(`Failed to Deposit: ${(error as Error)?.message}`);
+            throw FineractError.depositFailedError();
         }
     }
 
-    private async searchAccount(accountNo: string): Promise<THttpResponse<TFineractSearchResponse> | undefined>{
+    async getAccountId(accountNo: string): Promise<TLookupResponseInfo> {
+        this.logger.info(`Searching for Account with account number ${accountNo}`);
+        const res = await this.searchAccount(accountNo);
+        if (!res.data[0]) {
+            this.logger.warn(`Account number ${accountNo} not found`, 'FIN');
+            throw FineractError.noAccountFoundError();
+        }
+        const returnedEntity = res.data[0];
+        const getAccountRes = await this.getSavingsAccount(returnedEntity.entityId);
+        if (!getAccountRes.data.status.active) {
+            this.logger.warn('Fineract Account not active', getAccountRes.data);
+            throw FineractError.accountNotActiveError();
+        }
+        const currency = getAccountRes.data.currency.code;
+        const getClientRes = await this.getClient(getAccountRes.data.clientId);
+        if (getClientRes.statusCode !== 200) {
+            this.logger.warn(`Failed to get client with Id ${getAccountRes.data.clientId}`, getAccountRes.data);
+            throw FineractError.getClientWithIdError();
+        }
+        const lookUpRes = {
+            accountId: returnedEntity.entityId,
+            data: getClientRes.data,
+            status: getClientRes.statusCode,
+            currency: currency,
+        };
+        this.logger.info(`Client details found`, lookUpRes);
+        return lookUpRes;
+    }
+
+    private async searchAccount(accountNo: string): Promise<THttpResponse<TFineractSearchResponse>> {
         const url = `${this.fineractConfig.FINERACT_BASE_URL}/${ROUTES.search}?query=${accountNo}&resource=savingsaccount`;
         this.logger.info(`Request to fineract ${url}`);
-        const res = await this.httpClient.send<TFineractSearchResponse>(
-            url,
-            {
-                method: "GET",
-                headers: {
-                    "fineract-platform-tenantId": this.fineractConfig.FINERACT_TENTANT_ID,
-                    "Authorization": this.getAuthHeader()
-                }
-            }
-        );
-        return res;
+        return await this.httpClient.send<TFineractSearchResponse>({
+            url: url,
+            method: 'GET',
+            headers: this.getDefaultHeaders(),
+        });
     }
 
-    private async getSavingsAccount(accountId: number): Promise<THttpResponse<TFineractGetAccountResponse> | undefined>{
+    async getSavingsAccount(accountId: number): Promise<THttpResponse<TFineractGetAccountResponse>> {
         const url = `${this.fineractConfig.FINERACT_BASE_URL}/${ROUTES.savingsAccount}/${accountId}`;
-        this.logger.info(`Request to fineact ${url}`);
-        const res = await this.httpClient.send<TFineractGetAccountResponse >(
+        this.logger.debug('Request to fineract url:', { url });
+        const accountRes = await this.httpClient.send<TFineractGetAccountResponse>({
             url,
-            {
-                method: "GET",
-                headers: {
-                    "fineract-platform-tenantId": this.fineractConfig.FINERACT_TENTANT_ID,
-                    "Authorization": this.getAuthHeader()
-                }
-            }
-        );
-        return res;
-    }
+            method: 'GET',
+            headers: this.getDefaultHeaders(),
+        });
 
-    private getAuthHeader():string{
-        if(this.fineractConfig.FINERACT_AUTH_MODE == "oauth"){
-            // return oauth request header
+        if (accountRes.statusCode !== 200) {
+            const errMessage = `Search for Account failed with status code ${accountRes.statusCode}`;
+            this.logger.warn(errMessage, { accountId });
+            throw FineractError.searchAccountError(errMessage);
         }
-        return `Basic ${Buffer.from(`${this.fineractConfig.FINERACT_USERNAME}:${this.fineractConfig.FINERACT_PASSWORD}`).toString("base64")}`;
+
+        // todo: return accountRes.data
+        return accountRes;
     }
 
-    private async getClient(clientId: number): Promise<THttpResponse<TFineractGetClientResponse> | undefined>{
+    private getDefaultHeaders() {
+        return {
+            'fineract-platform-tenantId': this.fineractConfig.FINERACT_TENANT_ID,
+            Authorization: this.getAuthHeader(),
+            'Content-Type': 'application/json',
+        };
+    }
+
+    private getAuthHeader(): string {
+        return `Basic ${Buffer.from(`${this.fineractConfig.FINERACT_USERNAME}:${this.fineractConfig.FINERACT_PASSWORD}`).toString('base64')}`;
+    }
+
+    private async getClient(clientId: number): Promise<THttpResponse<TFineractGetClientResponse>> {
         const url = `${this.fineractConfig.FINERACT_BASE_URL}/${ROUTES.clients}/${clientId}`;
         this.logger.info(`Request to fineract ${url}`);
-        const res = await this.httpClient.send<TFineractGetClientResponse>(
-            url,
-            {
-                method: "GET",
-                headers: {
-                    "fineract-platform-tenantId": this.fineractConfig.FINERACT_TENTANT_ID,
-                    "Authorization": this.getAuthHeader()
-                }
-            }
-        );
-        return res;
+        return await this.httpClient.send<TFineractGetClientResponse>({
+            url: url,
+            method: 'GET',
+            headers: this.getDefaultHeaders(),
+        });
     }
 
-    private async sendTransfer(transactionPayload: TFineracttransferDeps ): Promise<THttpResponse<TFineractTransactionResponse> | undefined>{
-        const url = `${this.fineractConfig.FINERACT_BASE_URL}/${ROUTES.savingsAccount}/${transactionPayload.accountId}/transactions?command=deposit`;
-        this.logger.info(`Request to fineract ${url}`);
-        const res = await this.httpClient.send<TFineractTransactionResponse>(
-            url,
-            {
-                method:"POST",
-                headers: {
-                    "fineract-platform-tenantId": this.fineractConfig.FINERACT_TENTANT_ID,
-                    "Authorization": this.getAuthHeader(),
-                    "Content-Type": "application/json"
+    async sendTransfer(
+        transactionPayload: TFineractTransferDeps,
+    ): Promise<THttpResponse<TFineractTransactionResponse>> {
+        this.logger.info('Request to fineract. Withdraw');
+        const url = `${this.fineractConfig.FINERACT_BASE_URL}/${ROUTES.savingsAccount}/${transactionPayload.accountId}/transactions?command=withdrawal`;
+        try {
+            return await this.httpClient.post<TFineractTransactionPayload, TFineractTransactionResponse>(
+                url,
+                transactionPayload.transaction,
+                {
+                    headers: this.getDefaultHeaders(),
                 },
-                payload: transactionPayload.transaction
-            }
-        );
-        return res;
+            );
+        } catch (error: unknown) {
+            const errMessage = (error as Error)?.message || 'Unknown Error';
+            this.logger.error(`error in sendTransfer: ${errMessage}`);
+            throw FineractError.withdrawFailedError(errMessage);
+        }
+    }
+
+    async getCharges(): Promise<THttpResponse<TFineractGetChargeResponse>> {
+        this.logger.info('Request to get charges. Quote');
+        const url = `${this.fineractConfig.FINERACT_BASE_URL}/${ROUTES.charges}`;
+
+        try {
+            return await this.httpClient.get<TFineractGetChargeResponse>(url, {
+                headers: this.getDefaultHeaders(),
+            });
+        } catch (error: unknown) {
+            this.logger.error(`getCharges error: ${(error as Error)?.message}`);
+            throw FineractError.getChargesError();
+        }
     }
 }

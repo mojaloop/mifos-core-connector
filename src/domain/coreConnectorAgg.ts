@@ -25,163 +25,294 @@
  --------------
  ******/
 
- "use strict";
+'use strict';
 
-import { randomUUID } from "crypto";
+import { randomUUID } from 'crypto';
 import {
-    FineractLookupStage,
     IFineractClient,
     IdType,
     PartyType,
     TFineractConfig,
-    TFineractTransactionPayload
- } from "./FineractClient/types";
+    TFineractTransactionPayload,
+    TFineractTransferDeps,
+    TFineractGetAccountResponse,
+} from './FineractClient';
 import {
     ILogger,
     TLookupPartyInfoResponse,
     TQuoteResponse,
     TQuoteRequest,
     TtransferResponse,
-    TtransferRequest
-} from "./interfaces";
+    TtransferRequest,
+    ValidationError,
+} from './interfaces';
+import {
+    ISDKClient,
+    SDKClientError,
+    TFineractOutboundTransferRequest,
+    TFineractOutboundTransferResponse,
+    TSDKOutboundTransferRequest,
+    TtransferContinuationResponse,
+    TUpdateTransferDeps,
+} from './SDKClient';
+import { FineractError } from './FineractClient';
 
-export class CoreConnectorAggregate{
-    public IdType : string;
+export class CoreConnectorAggregate {
+    public IdType: string;
     private logger: ILogger;
-    DATE_FORMAT = "dd MM yy";
+    DATE_FORMAT = 'dd MM yy';
 
     constructor(
         private readonly fineractConfig: TFineractConfig,
         private readonly fineractClient: IFineractClient,
-        logger: ILogger
-    ){
+        private readonly sdkClient: ISDKClient,
+        logger: ILogger,
+    ) {
         this.IdType = fineractConfig.FINERACT_ID_TYPE;
         this.logger = logger;
     }
 
-    async getParties(IBAN: string): Promise<TLookupPartyInfoResponse | undefined>{
+    async getParties(IBAN: string): Promise<TLookupPartyInfoResponse> {
         this.logger.info(`Get Parties for IBAN ${IBAN}`);
-        // extract Account No from IBAN
         const accountNo = this.extractAccountFromIBAN(IBAN);
-
-        if(accountNo.length < 1){
-            return;
-        }
-
-        // Call Fineract to lookup account
         const lookupRes = await this.fineractClient.lookupPartyInfo(accountNo);
-
-        if(!lookupRes || !lookupRes.data){
-            this.logger.warn(`no lookupPartyInfo by accountNo`, { accountNo });
-            return;
-        }
-
-        if(lookupRes.stage == FineractLookupStage.CLIENT && lookupRes.status == 200 && lookupRes.currency != null){
-          // todo: move to DTO
-          const party = {
-                data : {
-                    displayName: lookupRes.data.displayName,
-                    firstName: lookupRes.data.firstname,
-                    idType: IdType.IBAN,
-                    idValue: accountNo,
-                    lastName: lookupRes.data.lastname,
-                    middleName: lookupRes.data.firstname,
-                    type: PartyType.CONSUMER,
-                    kycInformation: `${JSON.stringify(lookupRes.data)}`,
-                },
-                statusCode: lookupRes.status
-            };
-            this.logger.info(`Party found`, { party });
-            return party;
-        }else{
-            return;
-        }
+        const party = {
+            data: {
+                displayName: lookupRes.data.displayName,
+                firstName: lookupRes.data.firstname,
+                idType: IdType.IBAN,
+                idValue: accountNo,
+                lastName: lookupRes.data.lastname,
+                middleName: lookupRes.data.firstname,
+                type: PartyType.CONSUMER,
+                kycInformation: `${JSON.stringify(lookupRes.data)}`,
+            },
+            statusCode: lookupRes.status,
+        };
+        this.logger.info(`Party found`, { party });
+        return party;
     }
 
-    async quoterequest(quoterequest: TQuoteRequest):Promise<TQuoteResponse | undefined>{
-        // Currently fineract currently does not charge for deposits
-        if(quoterequest.to.idType != this.IdType){
-            throw new Error("Unsupported ID Type");
+    async quoteRequest(quoteRequest: TQuoteRequest): Promise<TQuoteResponse> {
+        this.logger.info(`Get Parties for ${this.IdType} ${quoteRequest.to.idValue}`);
+        if (quoteRequest.to.idType !== this.IdType) {
+            throw ValidationError.unsupportedIdTypeError();
         }
-        this.logger.info(`Get Parties for ${this.IdType} ${quoterequest.to.idValue}`);
-        const accountNo = this.extractAccountFromIBAN(quoterequest.to.idValue);
-        if(accountNo.length < 1){
-            return;
-        }
+        const accountNo = this.extractAccountFromIBAN(quoteRequest.to.idValue);
+        await this.fineractClient.verifyBeneficiary(accountNo);
 
-        const quoteRes = await this.fineractClient.calculateQuote({accountNo:accountNo});
-
-        if(!quoteRes || !quoteRes.accountStatus){
-          // todo: add log here
-            return;
-        }else{
-          // todo: move mapping logic to DTO
-            const quoteResponse: TQuoteResponse = {
-                expiration: new Date().toJSON(),
-                payeeFspCommissionAmount: "0",
-                payeeFspCommissionAmountCurrency: quoterequest.currency,
-                payeeFspFeeAmount: "0",
-                payeeFspFeeAmountCurrency: quoterequest.currency,
-                payeeReceiveAmount: quoterequest.amount,
-                payeeReceiveAmountCurrency: quoterequest.currency,
-                quoteId: quoterequest.quoteId,
-                transactionId: quoterequest.transactionId,
-                transferAmount: quoterequest.amount,
-                transferAmountCurrency: quoterequest.currency
-              };
-            return quoteResponse;
-        }
+        return {
+            expiration: new Date().toJSON(),
+            payeeFspCommissionAmount: '0',
+            payeeFspCommissionAmountCurrency: quoteRequest.currency,
+            payeeFspFeeAmount: '0',
+            payeeFspFeeAmountCurrency: quoteRequest.currency,
+            payeeReceiveAmount: quoteRequest.amount,
+            payeeReceiveAmountCurrency: quoteRequest.currency,
+            quoteId: quoteRequest.quoteId,
+            transactionId: quoteRequest.transactionId,
+            transferAmount: quoteRequest.amount,
+            transferAmountCurrency: quoteRequest.currency,
+        };
     }
 
-    async transfer(transfer: TtransferRequest ): Promise<TtransferResponse | undefined>{
-        if(transfer.to.idType != this.IdType){
-            throw new Error("Unsupported ID Type");
-        }
+    async receiveTransfer(transfer: TtransferRequest): Promise<TtransferResponse> {
         this.logger.info(`Transfer for  ${this.IdType} ${transfer.to.idValue}`);
-        const accountNo = this.extractAccountFromIBAN(transfer.to.idValue);
-        if(accountNo.length < 1){
-            return;
+        if (transfer.to.idType != this.IdType) {
+            throw ValidationError.unsupportedIdTypeError();
         }
 
-        const res = await this.fineractClient.getAccountFineractIdWithAccountNo(accountNo);
-        if(!res || res.accountId == null){
-            return;
-        }
+        const accountNo = this.extractAccountFromIBAN(transfer.to.idValue);
+        const res = await this.fineractClient.getAccountId(accountNo);
         const date = new Date();
-        const transaction : TFineractTransactionPayload = {
+        const transaction: TFineractTransactionPayload = {
             locale: this.fineractConfig.FINERACT_LOCALE,
             dateFormat: this.DATE_FORMAT,
-            transactionDate: `${date.getDate()} ${date.getMonth()+1} ${date.getFullYear()}`,
+            transactionDate: `${date.getDate()} ${date.getMonth() + 1} ${date.getFullYear()}`,
             transactionAmount: transfer.amount,
-            paymentTypeId: "1",
+            paymentTypeId: this.fineractConfig.FINERACT_PAYMENT_TYPE_ID,
             accountNumber: accountNo,
             routingCode: randomUUID(),
             receiptNumber: randomUUID(),
-            bankNumber: this.fineractConfig.FINERACT_BANK_ID
+            bankNumber: this.fineractConfig.FINERACT_BANK_ID,
         };
-        const transferRes = await this.fineractClient.transfer({
+
+        await this.fineractClient.receiveTransfer({
             accountId: res.accountId as number,
-            transaction: transaction
+            transaction: transaction,
         });
-        if(!transferRes){
-            return;
-        }
-        const transferResponse : TtransferResponse = {
-            completedTimestamp : new Date().toJSON(),
+        return {
+            completedTimestamp: new Date().toJSON(),
             homeTransactionId: transfer.transferId,
-            transferState: "COMMITTED"
+            transferState: 'COMMITTED',
         };
-        return transferResponse;
     }
 
-    extractAccountFromIBAN(IBAN:string): string{
-        // todo think how to validate account numbers
-        const accountNo = IBAN.slice(
-            this.fineractConfig.FINERACT_BANK_COUNTRY_CODE.length+
-            this.fineractConfig.FINERACT_CHECK_DIGITS.length+
-            this.fineractConfig.FINERACT_BANK_ID.length+
-            this.fineractConfig.FINERACT_ACCOUNT_PREFIX.length
+    async sendTransfer(transfer: TFineractOutboundTransferRequest): Promise<TFineractOutboundTransferResponse> {
+        this.logger.info(`Transfer from fineract account with ID${transfer.from.fineractAccountId}`);
+        const accountData = await this.getSavingsAccount(transfer.from.fineractAccountId);
+        if (accountData.subStatus.blockCredit || accountData.subStatus.blockDebit) {
+            const errMessage = 'Account blocked from credit or debit';
+            this.logger.warn(errMessage, accountData);
+            throw FineractError.accountDebitOrCreditBlockedError(errMessage);
+        }
+        const sdkOutboundTransfer: TSDKOutboundTransferRequest = this.getSDKTransferRequest(transfer);
+        const transferRes = await this.sdkClient.initiateTransfer(sdkOutboundTransfer);
+        if (
+            !transferRes.data.quoteResponse ||
+            !transferRes.data.quoteResponse.body.payeeFspCommission ||
+            !transferRes.data.quoteResponse.body.payeeFspFee
+        ) {
+            throw SDKClientError.noQuoteReturnedError();
+        }
+        const totalFineractFee = await this.fineractClient.calculateWithdrawQuote({
+            amount: this.getAmountSum([
+                parseFloat(transferRes.data.amount),
+                parseFloat(transferRes.data.quoteResponse.body.payeeFspFee.amount),
+                parseFloat(transferRes.data.quoteResponse.body.payeeFspCommission.amount),
+            ]),
+        });
+        if (!this.checkAccountBalance(totalFineractFee.feeAmount, accountData.summary.availableBalance)) {
+            this.logger.warn('Payer account does not have sufficient funds for transfer', accountData);
+            throw FineractError.accountInsufficientBalanceError();
+        }
+
+        return {
+            totalAmountFromFineract: totalFineractFee.feeAmount,
+            transferResponse: transferRes.data,
+        };
+    }
+
+    async updateSentTransfer(transferAccept: TUpdateTransferDeps): Promise<TtransferContinuationResponse> {
+        this.logger.info(
+            `Continuing transfer with id ${transferAccept.sdkTransferId} and account with id ${transferAccept.fineractTransaction.fineractAccountId}`,
         );
+        let transaction: TFineractTransferDeps | null = null;
+
+        try {
+            transaction = await this.getTransaction(transferAccept);
+            const withdrawRes = await this.fineractClient.sendTransfer(transaction);
+            if (withdrawRes.statusCode != 200) {
+                throw FineractError.withdrawFailedError(`Withdraw failed with status code ${withdrawRes.statusCode}`);
+            }
+
+            const updateTransferRes = await this.sdkClient.updateTransfer(
+                { acceptQuote: true },
+                transferAccept.sdkTransferId as number,
+            );
+
+            return updateTransferRes.data;
+        } catch (error: unknown) {
+            if (transaction) return await this.processUpdateSentTransferError(error, transaction);
+            throw error;
+        }
+    }
+
+    extractAccountFromIBAN(IBAN: string): string {
+        // todo: think how to validate account numbers
+        const accountNo = IBAN.slice(
+            this.fineractConfig.FINERACT_BANK_COUNTRY_CODE.length +
+                this.fineractConfig.FINERACT_CHECK_DIGITS.length +
+                this.fineractConfig.FINERACT_BANK_ID.length +
+                this.fineractConfig.FINERACT_ACCOUNT_PREFIX.length,
+        );
+        this.logger.debug('extracted account number from IBAN:', { accountNo, IBAN });
+        if (accountNo.length < 1) {
+            throw ValidationError.invalidAccountNumberError();
+        }
+
         return accountNo;
     }
- }
+
+    private getSDKTransferRequest(transfer: TFineractOutboundTransferRequest): TSDKOutboundTransferRequest {
+        return {
+            homeTransactionId: transfer.homeTransactionId,
+            from: transfer.from.payer,
+            to: transfer.to,
+            amountType: transfer.amountType,
+            currency: transfer.currency,
+            amount: transfer.amount,
+            transactionType: transfer.transactionType,
+            subScenario: transfer.subScenario,
+            note: transfer.note,
+            quoteRequestExtensions: transfer.quoteRequestExtensions,
+            transferRequestExtensions: transfer.transferRequestExtensions,
+            skipPartyLookup: transfer.skipPartyLookup,
+        };
+    }
+
+    private getAmountSum(amounts: number[]): number {
+        let sum = 0;
+        for (const amount of amounts) {
+            sum = amount + sum;
+        }
+        return sum;
+    }
+
+    private checkAccountBalance(totalAmount: number, accountBalance: number): boolean {
+        return accountBalance > totalAmount;
+    }
+
+    private async getSavingsAccount(accountId: number): Promise<TFineractGetAccountResponse> {
+        this.logger.debug('getting active savingsAccount...', { accountId });
+        const account = await this.fineractClient.getSavingsAccount(accountId);
+
+        if (!account.data.status.active) {
+            throw ValidationError.accountVerificationError();
+        }
+
+        return account.data;
+    }
+
+    private async getTransaction(transferAccept: TUpdateTransferDeps): Promise<TFineractTransferDeps> {
+        this.logger.info('Getting fineract transaction');
+        const accountRes = await this.fineractClient.getSavingsAccount(
+            transferAccept.fineractTransaction.fineractAccountId,
+        );
+
+        const date = new Date();
+        return {
+            accountId: transferAccept.fineractTransaction.fineractAccountId,
+            transaction: {
+                locale: this.fineractConfig.FINERACT_LOCALE,
+                dateFormat: this.DATE_FORMAT,
+                transactionDate: `${date.getDate()} ${date.getMonth() + 1} ${date.getFullYear()}`,
+                transactionAmount: transferAccept.fineractTransaction.totalAmount.toString(),
+                paymentTypeId: this.fineractConfig.FINERACT_PAYMENT_TYPE_ID,
+                accountNumber: accountRes.data.accountNo,
+                routingCode: transferAccept.fineractTransaction.routingCode,
+                receiptNumber: transferAccept.fineractTransaction.receiptNumber,
+                bankNumber: transferAccept.fineractTransaction.bankNumber,
+            },
+        };
+    }
+
+    // think of better way to handle refunding
+    private async processUpdateSentTransferError(error: unknown, transaction: TFineractTransferDeps): Promise<never> {
+        let needRefund = error instanceof SDKClientError;
+        try {
+            const errMessage = error instanceof Error ? error.message : 'Unknown error';
+            this.logger.error(`error in updateSentTransfer: ${errMessage}`, { error, needRefund, transaction });
+            if (!needRefund) throw error;
+            //Refund the money
+            const depositRes = await this.fineractClient.receiveTransfer(transaction);
+            if (depositRes.statusCode != 200) {
+                const logMessage = `Invalid statusCode from fineractClient.receiveTransfer: ${depositRes.statusCode}`;
+                this.logger.warn(logMessage);
+                throw new Error(logMessage);
+            }
+            needRefund = false;
+            this.logger.info('Refund successful', { needRefund });
+            throw error;
+        } catch (err: unknown) {
+            if (!needRefund) throw error;
+
+            const details = {
+                amount: parseFloat(transaction.transaction.transactionAmount),
+                fineractAccountId: transaction.accountId,
+            };
+            this.logger.error('refundFailedError', { details, transaction });
+            throw ValidationError.refundFailedError(details);
+        }
+    }
+}

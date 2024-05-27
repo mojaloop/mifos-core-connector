@@ -25,58 +25,64 @@
  --------------
  ******/
 
- "use strict";
+'use strict';
 
-import { ReqRefDefaults, ServerRoute } from "@hapi/hapi/lib/types";
-import {SDKSchemeAdapter} from "@mojaloop/api-snippets";
+import { SDKSchemeAdapter } from '@mojaloop/api-snippets';
+import { AxiosRequestConfig, CreateAxiosDefaults } from 'axios';
+import { ILogger } from './infrastructure';
+
+export type TJson = string | number | boolean | { [x: string]: TJson } | Array<TJson>;
+
+export type THttpRequestOptions = Omit<AxiosRequestConfig, 'url' | 'method'>;
+
+export type THttpClientDeps = {
+    options: CreateAxiosDefaults;
+    logger: ILogger;
+};
 
 export type TQuoteRequest = SDKSchemeAdapter.V2_0_0.Backend.Types.quoteRequest;
 
 export type TtransferRequest = SDKSchemeAdapter.V2_0_0.Backend.Types.transferRequest;
 
- export type THttpResponse<R> = {
-    data: R
-    statusCode: number
- }
+export type THttpResponse<R> = {
+    data: R;
+    statusCode: number;
+    error?: Error;
+};
 
- export type TRequestOptions = {
-    payload?:unknown | undefined;
-    timeout_ms?:number;
+export type TRequestOptions = {
+    payload?: unknown | undefined;
+    timeout_ms?: number;
     method?: string;
     headers?: unknown | undefined;
- }
+};
 
 export type TQuoteResponse = SDKSchemeAdapter.V2_0_0.Backend.Types.quoteResponse;
 
 export type TtransferResponse = SDKSchemeAdapter.V2_0_0.Backend.Types.transferResponse;
 
 export type Payee = {
-   dateOfBirth?: string;
-   displayName: string;
-   extensionList?: unknown[];
-   firstName: string;
-   fspId?: string;
-   idSubValue?: string;
-   idType: string;
-   idValue: string;
-   lastName: string;
-   merchantClassificationCode?: string;
-   middleName: string;
-   type: string;
-   supportedCurrencies?: string;
-   kycInformation: string;
+    dateOfBirth?: string;
+    displayName: string;
+    extensionList?: unknown[];
+    firstName: string;
+    fspId?: string;
+    idSubValue?: string;
+    idType: string;
+    idValue: string;
+    lastName: string;
+    merchantClassificationCode?: string;
+    middleName: string;
+    type: string;
+    supportedCurrencies?: string;
+    kycInformation: string;
 };
 
 export type Transfer = {
-   completedTimestamp: string;
-   fulfilment: string;
-   homeTransactionId: string;
-   transferState: string;
+    completedTimestamp: string;
+    fulfilment: string;
+    homeTransactionId: string;
+    transferState: string;
 };
 
 export type TLookupPartyInfoResponse = THttpResponse<Payee>;
-
-
-export interface IRoutes{
-   getRoutes():ServerRoute<ReqRefDefaults>[]
-}

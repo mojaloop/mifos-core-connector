@@ -1500,7 +1500,7 @@ paths:
       tags:
       - Account Transfers
     post:
-      description: Ability to create new transfer of monetary funds from one account
+      description: Ability to create new receiveTransfer of monetary funds from one account
         to another.
       operationId: create_4
       requestBody:
@@ -1717,7 +1717,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/GetAccountTransfersPageItems'
           description: OK
-      summary: Retrieve account transfer
+      summary: Retrieve account receiveTransfer
       tags:
       - Account Transfers
   /v1/adhocquery:
@@ -3461,7 +3461,7 @@ paths:
       - Client
   /v1/clients/external-id/{externalId}/transferproposaldate:
     get:
-      description: Retrieve client transfer template using the client external Id
+      description: Retrieve client receiveTransfer template using the client external Id
       operationId: retrieveTransferTemplate_1
       parameters:
       - in: path
@@ -3478,7 +3478,7 @@ paths:
           description: OK
         "400":
           description: Bad Request
-      summary: Retrieve client transfer template
+      summary: Retrieve client receiveTransfer template
       tags:
       - Client
   /v1/clients/template:
@@ -4706,7 +4706,7 @@ paths:
       - Client Transaction
   /v1/clients/{clientId}/transferproposaldate:
     get:
-      description: Retrieve client transfer template
+      description: Retrieve client receiveTransfer template
       operationId: retrieveTransferTemplate
       parameters:
       - in: path
@@ -4724,7 +4724,7 @@ paths:
           description: OK
         "400":
           description: Bad Request
-      summary: Retrieve client transfer template
+      summary: Retrieve client receiveTransfer template
       tags:
       - Client
   /v1/codes:
@@ -7034,7 +7034,7 @@ paths:
       - External Asset Owners
   /v1/external-asset-owners/transfers/{transferId}/journal-entries:
     get:
-      description: Retrieve Journal entries of transfer by transferId
+      description: Retrieve Journal entries of receiveTransfer by transferId
       operationId: getJournalEntriesOfTransfer
       parameters:
       - description: transferId
@@ -19039,7 +19039,7 @@ paths:
           description: OK
       summary: Create new Transfer
       tags:
-      - Self Account transfer
+      - Self Account receiveTransfer
   /v1/self/accounttransfers/template:
     get:
       description: |
@@ -19067,7 +19067,7 @@ paths:
           description: OK
       summary: Retrieve Account Transfer Template
       tags:
-      - Self Account transfer
+      - Self Account receiveTransfer
   /v1/self/authentication:
     post:
       description: |-
@@ -21567,7 +21567,7 @@ paths:
       tags:
       - Standing Instructions
     post:
-      description: Ability to create new instruction for transfer of monetary funds
+      description: Ability to create new instruction for receiveTransfer of monetary funds
         from one account to another
       operationId: create_5
       requestBody:
@@ -43057,7 +43057,7 @@ components:
       properties:
         code:
           type: string
-          example: accountTransferType.account.transfer
+          example: accountTransferType.account.receiveTransfer
         description:
           type: string
           example: Account Transfer
@@ -43070,7 +43070,7 @@ components:
       properties:
         code:
           type: string
-          example: accountTransferType.account.transfer
+          example: accountTransferType.account.receiveTransfer
         description:
           type: string
           example: Account Transfer
@@ -46528,7 +46528,7 @@ components:
           example: 01 August 2011
         transferDescription:
           type: string
-          example: A description of the transfer
+          example: A description of the receiveTransfer
     PostAccountTransfersResponse:
       type: object
       description: PostAccountTransfersResponse
@@ -48207,12 +48207,12 @@ components:
           example: en
         resourceExternalId:
           type: string
-          description: transfer external ID
+          description: receiveTransfer external ID
           example: 36efeb06-d835-48a1-99eb-09bd1d348c1e
         resourceId:
           type: integer
           format: int64
-          description: transfer ID
+          description: receiveTransfer ID
           example: 1
         subResourceExternalId:
           type: string

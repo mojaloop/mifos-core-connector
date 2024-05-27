@@ -25,17 +25,31 @@
  --------------
  ******/
 
-import { IHttpClient, ILogger, THttpResponse, TRequestOptions } from "src/domain";
+'use strict';
 
-// todo: why do we need this? it's better to use axios-mock-adapter
-export class HttpClientMock implements IHttpClient{
-    logger: ILogger;
+import { BasicError, ErrorOptions } from '../interfaces';
 
-    constructor(logger: ILogger){
-        this.logger = logger;
+export class SDKClientError extends BasicError {
+    // think, if it's better to have a separate class
+    static continueTransferError(message: string, options?: ErrorOptions) {
+        const {
+          httpCode = 500,
+          mlCode = httpCode === 504 ? '2004' : '2001'
+        } = options || {};
+        return new SDKClientError(message, { mlCode, httpCode });
     }
-    async send<R = unknown>(url: string, options: TRequestOptions): Promise<THttpResponse<R> | undefined> {
-        this.logger.info(`${options.method} ${url}`);
-        return;
+
+    static initiateTransferError(message = 'InitiateTransferError') {
+        return new SDKClientError(message, {
+            httpCode: 500,
+            mlCode: '2000',
+        });
+    }
+
+    static noQuoteReturnedError() {
+        return new SDKClientError('Quote response is not defined', {
+            httpCode: 500,
+            mlCode: '3200',
+        });
     }
 }

@@ -5,6 +5,19 @@ networks:
 
 
 services:
+  TtkUi:
+    image: mojaloop/ml-testing-toolkit-ui:v15.3.0
+    ports:
+      - "6060:6060"
+    networks:
+      - mojaloop-net
+    environment:
+      - API_BASE_URL=http://localhost:5050
+      - AUTH_ENABLED=FALSE
+    command:
+      - sh
+      - /usr/share/nginx/start.sh
+
   TtkBackend:
     networks:
       - mojaloop-net

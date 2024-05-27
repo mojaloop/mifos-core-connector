@@ -6,25 +6,43 @@ networks:
 
 services:
   mifosCoreConnector:
-    image: mifos-core-connector
+    image: mojaloop/mifos-core-connector:local
     build:
       context: ../..
     networks:
       - mojaloop-net
     environment:
-      - FINERACT_TENTANT_ID=default
+      - FINERACT_TENANT_ID=default
       - FINERACT_AUTH_MODE=basic
       - FINERACT_USERNAME=mifos
       - FINERACT_PASSWORD=password
-      - FINERACT_BANK_ID=0720 
+      - FINERACT_BANK_ID=0720
       - FINERACT_ACCOUNT_PREFIX=000289
-      - FINERACT_BANK_COUNTRY_CODE=UG 
+      - FINERACT_BANK_COUNTRY_CODE=UG
       - FINERACT_CHECK_DIGITS=68
-      - HOST=mifosCoreConnector
-      - PORT= 3000
+      - FINERACT_LOCALE=en
+      - SDK_SERVER_HOST=mifosCoreConnector
+      - SDK_SERVER_PORT=3003
+      - DFSP_SERVER_HOST=mifosCoreConnector
+      - DFSP_SERVER_PORT=3004
       - FINERACT_BASE_URL=https://demo.mifos.io/fineract-provider/api/v1
+      - SDK_BASE_URL=http://sdkSchemeAdapterOutbound:4010
     ports:
-      - "3000:3000"
+      - "3003:3003"
+      - "3004:3004"
+
+  sdkSchemeAdapterOutbound:
+    image: stoplight/prism:4
+    networks:
+      - mojaloop-net
+    command: mock -h sdkSchemeAdapterOutbound "/tmp/api.oas2.yml"
+    volumes:
+      - ../../src/api-spec:/tmp
+    ports:
+      - "4010:4010"
+    init: true
+    container_name: sdk_adapter
+    restart: unless-stopped
 
   TtkBackend:
     networks:

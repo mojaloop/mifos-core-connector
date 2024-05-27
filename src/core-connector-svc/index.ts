@@ -25,6 +25,6 @@ optionally within square brackets <email>.
 --------------
 ******/
 
-"use strict";
+'use strict';
 
-export * from "./Service";
+export * from './Service';

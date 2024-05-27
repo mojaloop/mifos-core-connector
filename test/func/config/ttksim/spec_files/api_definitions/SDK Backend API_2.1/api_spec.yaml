@@ -70,7 +70,7 @@ paths:
         - BulkQuotes
   /bulkTransactions/{bulkTransactionId}:
     put:
-      description: The HTTP request `PUT /bulkTransactions/{bulkTransactionId}` is used to amend information regarding a bulk transaction, i.e. when autoAcceptParty or autoAcceptQuote  is false then the payer need to provide confirmation to proceed with further processing of the request. The `{bulkTransactionId}` in the URI should contain the `bulkTransactionId` that was used for the creation of the bulk transfer.
+      description: The HTTP request `PUT /bulkTransactions/{bulkTransactionId}` is used to amend information regarding a bulk transaction, i.e. when autoAcceptParty or autoAcceptQuote  is false then the payer need to provide confirmation to proceed with further processing of the request. The `{bulkTransactionId}` in the URI should contain the `bulkTransactionId` that was used for the creation of the bulk receiveTransfer.
       operationId: BackendBulkTransactionsPut
       parameters:
         - $ref: '../components/parameters/bulkTransactionId.yaml'
@@ -118,19 +118,19 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/bulkTransferRequest'
-        description: An incoming bulk transfer request.
+        description: An incoming bulk receiveTransfer request.
       responses:
         '200':
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/bulkTransferResponse'
-          description: The bulk transfer was accepted.
+          description: The bulk receiveTransfer was accepted.
         '400':
           $ref: ../components/responses/400.yaml
         '500':
           $ref: ../components/responses/500.yaml
-      summary: Execute bulk transfer of funds from an external account to internal accounts.
+      summary: Execute bulk receiveTransfer of funds from an external account to internal accounts.
       tags:
         - BulkTransfers
   /bulkTransfers/{idValue}:
@@ -144,14 +144,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bulkTransferResponse'
-          description: Response containing details of the requested bulk transfer.
+          description: Response containing details of the requested bulk receiveTransfer.
         '400':
           $ref: ../components/responses/400.yaml
         '404':
           $ref: ../components/responses/404.yaml
         '500':
           $ref: ../components/responses/500.yaml
-      summary: Requests information relating to a bulk transfer identified by the specified identifier value.
+      summary: Requests information relating to a bulk receiveTransfer identified by the specified identifier value.
       tags:
         - BulkTransfers
   /otp/{transactionRequestId}:
@@ -224,7 +224,7 @@ paths:
         - Participants
   /parties/{idType}/{idValue}:
     get:
-      description: The HTTP request `GET /parties/{idType}/{idValue}` is used to look up information regarding the requested transfer party, identified by `{idType}` and `{idValue}`.
+      description: The HTTP request `GET /parties/{idType}/{idValue}` is used to look up information regarding the requested receiveTransfer party, identified by `{idType}` and `{idValue}`.
       operationId: BackendPartiesGetByTypeAndID
       parameters:
         - $ref: '#/components/parameters/idType'
@@ -242,12 +242,12 @@ paths:
           $ref: ../components/responses/404.yaml
         '500':
           $ref: ../components/responses/500.yaml
-      summary: Requests information relating to a transfer party identified by the specified identifier type and value.
+      summary: Requests information relating to a receiveTransfer party identified by the specified identifier type and value.
       tags:
         - Parties
   /parties/{idType}/{idValue}/{idSubValue}:
     get:
-      description: The HTTP request `GET /parties/{idType}/{idValue}/{idSubValue}` is used to look up information regarding the requested transfer party, identified by `{idType}`, `{idValue}` and `{idSubValue}`.
+      description: The HTTP request `GET /parties/{idType}/{idValue}/{idSubValue}` is used to look up information regarding the requested receiveTransfer party, identified by `{idType}`, `{idValue}` and `{idSubValue}`.
       operationId: BackendPartiesGetByTypeIdAndSubId
       parameters:
         - $ref: '#/components/parameters/idType'
@@ -266,7 +266,7 @@ paths:
           $ref: ../components/responses/404.yaml
         '500':
           $ref: ../components/responses/500.yaml
-      summary: Requests information relating to a transfer party identified by the specified identifier type, value and subId value.
+      summary: Requests information relating to a receiveTransfer party identified by the specified identifier type, value and subId value.
       tags:
         - Parties
   /quoterequests:
@@ -278,19 +278,19 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/quoteRequest'
-        description: Request for a transfer quotation.
+        description: Request for a receiveTransfer quotation.
       responses:
         '200':
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/quoteResponse'
-          description: A response to the transfer quotation request.
+          description: A response to the receiveTransfer quotation request.
         '400':
           $ref: ../components/responses/400.yaml
         '500':
           $ref: ../components/responses/500.yaml
-      summary: Requests a quote for the specified transfer.
+      summary: Requests a quote for the specified receiveTransfer.
       tags:
         - Quotes
   /transactionrequests:
@@ -308,7 +308,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/transactionRequestResponse'
-          description: A response to the transfer transaction request.
+          description: A response to the receiveTransfer transaction request.
         '400':
           $ref: ../components/responses/400.yaml
         '500':
@@ -318,21 +318,21 @@ paths:
         - TransactionRequest
   /transfers:
     post:
-      description: The HTTP request `POST /transfers` is used to request the creation of a transfer for the transfer party.
+      description: The HTTP request `POST /transfers` is used to request the creation of a receiveTransfer for the receiveTransfer party.
       operationId: BackendTransfersPost
       requestBody:
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/transferRequest'
-        description: An incoming transfer request.
+        description: An incoming receiveTransfer request.
       responses:
         '200':
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/transferResponse'
-          description: The transfer was accepted.
+          description: The receiveTransfer was accepted.
         '400':
           $ref: ../components/responses/400.yaml
         '500':
@@ -342,7 +342,7 @@ paths:
         - Transfers
   /transfers/{transferId}:
     get:
-      description: The HTTP request `GET /transfers/{transferId}` is used to get information regarding a transfer created or requested earlier. The `{transferId}` in the URI should contain the `transferId` that was used for the creation of the transfer.
+      description: The HTTP request `GET /transfers/{transferId}` is used to get information regarding a receiveTransfer created or requested earlier. The `{transferId}` in the URI should contain the `transferId` that was used for the creation of the receiveTransfer.
       operationId: BackendTransfersGet
       parameters:
         - $ref: '#/components/parameters/transferId'
@@ -352,14 +352,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/transferDetailsResponse'
-          description: The transfer was accepted.
+          description: The receiveTransfer was accepted.
         '500':
           $ref: ../components/responses/500.yaml
-      summary: Retrieves information for a specific transfer.
+      summary: Retrieves information for a specific receiveTransfer.
       tags:
         - Transfers
     put:
-      description: The HTTP request `PUT /transfers/{transferId}` is used to receive notification for transfer being fulfiled when the FSP is a Payee.
+      description: The HTTP request `PUT /transfers/{transferId}` is used to receive notification for receiveTransfer being fulfiled when the FSP is a Payee.
       operationId: BackendTransfersPut
       parameters:
         - $ref: '#/components/parameters/transferId'
@@ -368,13 +368,13 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/fulfilNotification'
-        description: An incoming notification for fulfiled transfer.
+        description: An incoming notification for fulfiled receiveTransfer.
       responses:
         '200':
           description: The notification was accepted.
         '500':
           $ref: ../components/responses/500.yaml
-      summary: Receive notification for a specific transfer.
+      summary: Receive notification for a specific receiveTransfer.
       tags:
         - Transfers
   /fxQuotes:
@@ -519,7 +519,7 @@ components:
         - quoteId
       type: object
     IndividualTransfer:
-      description: Data model for individual transfer in a bulk transfer request.
+      description: Data model for individual receiveTransfer in a bulk receiveTransfer request.
       properties:
         amount:
           $ref: '#/components/schemas/money'
@@ -554,7 +554,7 @@ components:
         - currency
       type: object
     IndividualTransferResult:
-      description: Data model for individual transfer in a bulk transfer response.
+      description: Data model for individual receiveTransfer in a bulk receiveTransfer response.
       properties:
         errorResponse:
           $ref: ../components/schemas/errorResponse.yaml
@@ -587,7 +587,7 @@ components:
       title: MiddleName
       type: string
     amountCurrency:
-      description: Object containing Amount and Currency of the transfer.
+      description: Object containing Amount and Currency of the receiveTransfer.
       properties:
         amount:
           $ref: '#/components/schemas/money'
@@ -649,7 +649,7 @@ components:
         - individualQuoteResults
       type: object
     bulkTransferId:
-      description: A Mojaloop API transfer identifier (UUID).
+      description: A Mojaloop API receiveTransfer identifier (UUID).
       pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
       type: string
     bulkTransferRequest:
@@ -1026,7 +1026,7 @@ components:
       minLength: 1
       type: string
     ilpPacketData:
-      description: Object containing transfer object.
+      description: Object containing receiveTransfer object.
       properties:
         amount:
           $ref: '#/components/schemas/amountCurrency'
@@ -1096,7 +1096,7 @@ components:
       pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
       type: string
     quoteRequest:
-      description: A request for a quote for transfer from the DFSP backend.
+      description: A request for a quote for receiveTransfer from the DFSP backend.
       properties:
         homeR2PTransactionId:
           type: string
@@ -1125,7 +1125,7 @@ components:
         initiatorType:
           $ref: '#/components/schemas/initiatorType'
         note:
-          description: An optional note associated with the requested transfer.
+          description: An optional note associated with the requested receiveTransfer.
           maxLength: 128
           minLength: 1
           type: string
@@ -1216,7 +1216,7 @@ components:
       pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
       type: string
     transactionRequest:
-      description: A request for a pull based transfer.
+      description: A request for a pull based receiveTransfer.
       properties:
         amount:
           $ref: '#/components/schemas/money'
@@ -1233,7 +1233,7 @@ components:
         initiatorType:
           $ref: '#/components/schemas/initiatorType'
         note:
-          description: An optional note associated with the requested transfer.
+          description: An optional note associated with the requested receiveTransfer.
           maxLength: 128
           minLength: 1
           type: string
@@ -1297,7 +1297,7 @@ components:
         - PAYMENT
       type: string
     transactionTypeObject:
-      description: Object containing transfer object.
+      description: Object containing receiveTransfer object.
       properties:
         initiator:
           $ref: '#/components/schemas/initiator'
@@ -1352,7 +1352,7 @@ components:
         - timestamp
       type: object
     transferId:
-      description: A Mojaloop API transfer identifier (UUID).
+      description: A Mojaloop API receiveTransfer identifier (UUID).
       pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
       type: string
     transferParty:

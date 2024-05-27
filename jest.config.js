@@ -1,10 +1,11 @@
 module.exports = {
     preset: 'ts-jest',
     testEnvironment: 'node',
-    coveragePathIgnorePatterns:['dist'],
-    coverageReporters: ['text', ['json', {file: 'integration-final.json'}]],
-    coverageDirectory: './coverage/',
+    setupFiles: ['<rootDir>/test/setup.ts'],
     clearMocks: true,
+    coveragePathIgnorePatterns: ['dist'],
+    coverageReporters: ['text', ['json', { file: 'integration-final.json' }]],
+    coverageDirectory: './coverage/',
     // coverageThreshold: {
     //     "global": {
     //         "branches": 90,

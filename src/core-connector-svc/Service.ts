@@ -25,86 +25,80 @@ optionally within square brackets <email>.
 --------------
 ******/
 
-"use strict";
+'use strict';
 
-import { Server } from "@hapi/hapi";
-import { IHttpClient } from "../domain";
-import { CoreConnectorAggregate } from "../domain";
-import { AxiosClientFactory } from "../infra/axiosHttpClient";
-import config from "../config";
-import { CoreConnectorRoutes } from "./coreConnectorRoutes";
-import { loggerFactory } from "../infra/logger";
+import { Server } from '@hapi/hapi';
+import { IHTTPClient } from '../domain';
+import { CoreConnectorAggregate } from '../domain';
+import { AxiosClientFactory } from '../infra/axiosHttpClient';
+import config from '../config';
+import { CoreConnectorRoutes } from './coreConnectorRoutes';
+import { loggerFactory } from '../infra/logger';
 import { createPlugins } from '../plugins';
-import { FineractClientFactory } from "../domain/FineractClient";
+import { FineractClientFactory } from '../domain/FineractClient';
+import { SDKClientFactory } from '../domain/SDKClient';
+import { DFSPCoreConnectorRoutes } from './dfspCoreConnectorRoutes';
 
-const logger = loggerFactory({ context: 'MifosCC' });
+export const logger = loggerFactory({ context: 'MifosCC' });
 
 export class Service {
     static coreConnectorAggregate: CoreConnectorAggregate;
-    static httpClient: IHttpClient;
-    static server: Server;
+    static httpClient: IHTTPClient;
+    static sdkServer: Server;
+    static dfspServer: Server;
 
-    static async start(httpClient?: IHttpClient){
-        if(!httpClient){
-            httpClient = AxiosClientFactory.createAxiosClientInstance();
-        }
+    static async start(httpClient: IHTTPClient = AxiosClientFactory.createAxiosClientInstance()) {
         this.httpClient = httpClient;
-        const fineractConfig = config.get("fineract");
+        const fineractConfig = config.get('fineract');
         const fineractClient = FineractClientFactory.createClient({
             fineractConfig: fineractConfig,
             httpClient: this.httpClient,
-            logger: logger
+            logger: logger,
         });
-        this.coreConnectorAggregate = new CoreConnectorAggregate(fineractConfig,fineractClient,logger);
+
+        const sdkClient = SDKClientFactory.getSDKClientInstance(
+            logger,
+            httpClient,
+            config.get('sdkSchemeAdapter.SDK_BASE_URL'),
+        );
+        this.coreConnectorAggregate = new CoreConnectorAggregate(fineractConfig, fineractClient, sdkClient, logger);
 
         await this.setupAndStartUpServer();
-        logger.info("Core Connector Server started");
+        logger.info('Core Connector Server started');
     }
 
-    static async setupAndStartUpServer(){
-            this.server = new Server(config.get('server'));
-            await this.server.register(createPlugins({ logger }));
+    static async setupAndStartUpServer() {
+        this.sdkServer = new Server({
+            host: config.get('server.SDK_SERVER_HOST'),
+            port: config.get('server.SDK_SERVER_PORT'),
+        });
 
-            const coreConnectorRoutes = new CoreConnectorRoutes(this.coreConnectorAggregate, logger);
-            this.server.route(coreConnectorRoutes.getRoutes());
-            await this.server.start();
-            logger.info(`Core Connector Server running at ${this.server.info.uri}`);
+        this.dfspServer = new Server({
+            host: config.get('server.DFSP_SERVER_HOST'),
+            port: config.get('server.DFSP_SERVER_PORT'),
+        });
+        await this.sdkServer.register(createPlugins({ logger }));
+
+        await this.dfspServer.register(createPlugins({ logger }));
+
+        const coreConnectorRoutes = new CoreConnectorRoutes(this.coreConnectorAggregate, logger);
+        await coreConnectorRoutes.init();
+
+        const dfspCoreConnectorRoutes = new DFSPCoreConnectorRoutes(this.coreConnectorAggregate, logger);
+        await dfspCoreConnectorRoutes.init();
+
+        this.sdkServer.route(coreConnectorRoutes.getRoutes());
+        this.dfspServer.route(dfspCoreConnectorRoutes.getRoutes());
+
+        await this.sdkServer.start();
+        logger.info(`SDK Core Connector Server running at ${this.sdkServer.info.uri}`);
+        await this.dfspServer.start();
+        logger.info(`DFSP Core Connector Server running at ${this.dfspServer.info.uri}`);
     }
 
-    static async stop(){
-        await this.server.stop({timeout: 60});
-        logger.info("Service Stopped");
+    static async stop() {
+        await this.sdkServer.stop({ timeout: 60 });
+        await this.dfspServer.stop({ timeout: 60 });
+        logger.info('Service Stopped');
     }
 }
-
-// todo: refactor it and move to /src/index.ts
-async function _handle_int_and_term_signals(signal: NodeJS.Signals): Promise<void> {
-    logger.warn(`Service - ${signal} received - cleaning up...`);
-    let clean_exit = false;
-    setTimeout(() => {
-        clean_exit || process.abort();
-    }, 5000);
-
-    // call graceful stop routine
-    await Service.stop();
-
-    clean_exit = true;
-    process.exit();
-}
-
-//catches ctrl+c event
-process.on('SIGINT', _handle_int_and_term_signals.bind(this));
-//catches program termination event
-process.on('SIGTERM', _handle_int_and_term_signals.bind(this));
-
-//do something when app is closing
-/* istanbul ignore next */
-process.on('exit', async () => {
-    logger.info('Service - exiting...');
-});
-
-/* istanbul ignore next */
-process.on('uncaughtException',(err: Error) => {
-    logger.error(`UncaughtException: ${err?.message}`, err);
-    process.exit(999);
-});

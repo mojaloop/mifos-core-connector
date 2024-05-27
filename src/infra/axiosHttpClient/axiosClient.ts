@@ -25,34 +25,55 @@
  --------------
  ******/
 
- "use strict";
+'use strict';
 
-import axios, { AxiosHeaders } from "axios";
-import { THttpResponse,TRequestOptions } from "../../domain";
-import { IHttpClient } from "../../domain";
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import { IHTTPClient, ILogger, THttpClientDeps, THttpRequestOptions, THttpResponse, TJson } from '../../domain';
 
-// todo: it's better to use more generic name: HttpClient
- export class AxiosHttpClient implements IHttpClient{
-     async send<R = unknown>(url: string, options: TRequestOptions): Promise<THttpResponse<R> | undefined> {
-        const method  = options.method;
-        const data = JSON.stringify(options.payload);
-        const timeout = options.timeout_ms;
-        const headers = options.headers as AxiosHeaders;
+export class AxiosHTTPClient implements IHTTPClient {
+    private readonly axios: AxiosInstance;
+    private readonly logger: ILogger;
 
-        try {
-            const res = await axios.request({
-                url,
-                method,
-                data,
-                timeout,
-                headers
-            });
-            return {data: res.data, statusCode: res.status};
-        } catch (error) {
-            console.error(error); // todo. Replace with a proper logger
-            return;
-            // todo: I'd suggest rethrowing the error from the httpClient, and allow code, which uses it to handle it as needed
-        }
-     }
+    constructor(deps: THttpClientDeps) {
+        this.axios = axios.create(deps.options); // todo: move to deps
+        this.logger = deps.logger.child({ context: this.constructor.name });
+    }
 
- }
+    async get<R = unknown>(url: string, options?: THttpRequestOptions): Promise<THttpResponse<R>> {
+        const res = await this.axios.get<R>(url, options);
+        return this.responseDto(res);
+    }
+
+    async post<D extends TJson, R = unknown>(
+        url: string,
+        data: D,
+        options?: THttpRequestOptions,
+    ): Promise<THttpResponse<R>> {
+        const res = await this.axios.post<R>(url, data, options);
+        return this.responseDto(res);
+    }
+
+    async put<D extends TJson, R = unknown>(
+        url: string,
+        data: D,
+        options?: THttpRequestOptions,
+    ): Promise<THttpResponse<R>> {
+        const res = await this.axios.put<R>(url, data, options);
+        return this.responseDto(res);
+    }
+
+    async send<R = unknown>(options: AxiosRequestConfig): Promise<THttpResponse<R>> {
+        const res = await this.axios.request<R>(options);
+        return this.responseDto(res);
+    }
+
+    private responseDto(rawResponse: AxiosResponse) {
+        const { data, status } = rawResponse;
+        const json = Object.freeze({
+            data,
+            statusCode: status,
+        });
+        this.logger.info('Received response:', json);
+        return json;
+    }
+}
