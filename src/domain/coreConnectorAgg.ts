@@ -287,7 +287,7 @@ export class CoreConnectorAggregate {
         };
     }
 
-    // think better way to handle refunding
+    // think of better way to handle refunding
     private async processUpdateSentTransferError(error: unknown, transaction: TFineractTransferDeps): Promise<never> {
         let needRefund = error instanceof SDKClientError;
         try {
