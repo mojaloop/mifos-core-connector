@@ -68,3 +68,39 @@ export const fineractGetAccountIdResponseDto = () => ({
 });
 
 export const fineractReceiveTransferResponseDto = () => true;
+
+export const fineractGetSavingsAccountResponseDto = (
+    credit: boolean,
+    debit: boolean,
+    balance: number,
+    active: boolean,
+) => ({
+    status: {
+        active: active,
+    },
+    subStatus: {
+        blockCredit: credit,
+        blockDebit: debit,
+    },
+    summary: {
+        availableBalance: balance,
+    },
+});
+
+export const sdkInitiateTransferResponseDto = (
+    payeeFspCommissionAmount: string | undefined,
+    payeeFspFeeAmount: string | undefined,
+) => ({
+    quoteResponse: {
+        body: {
+            payeeFspCommission: {
+                amount: payeeFspCommissionAmount,
+            },
+            payeeFspFee: {
+                amount: payeeFspFeeAmount,
+            },
+        },
+    },
+});
+
+export const fineractCalculateWithdrawQuoteResponseDto = (feeAmount: number) => feeAmount;
