@@ -132,7 +132,10 @@ export class FineractClient implements IFineractClient {
         if (!getAccountRes.data.status.active) {
             this.logger.warn('Fineract Account not active', getAccountRes.data);
             throw FineractError.accountNotActiveError();
+        } else if (getAccountRes.data.subStatus.blockCredit || getAccountRes.data.subStatus.blockDebit) {
+            throw FineractError.accountDebitOrCreditBlockedError('Account blocked for credit or debit');
         }
+
         const currency = getAccountRes.data.currency.code;
         const getClientRes = await this.getClient(getAccountRes.data.clientId);
         if (getClientRes.statusCode !== 200) {
