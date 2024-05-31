@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.3.0](https://github.com/mojaloop/mifos-core-connector/compare/v1.2.0...v1.3.0) (2024-05-31)
+
+
+### Features
+
+* added account check for blocked credit or blocked debit ([353ad27](https://github.com/mojaloop/mifos-core-connector/commit/353ad279f915e68945b0cf0ed05db983613ee9ab))
+
 ## [1.2.0](https://github.com/mojaloop/mifos-core-connector/compare/v1.1.0...v1.2.0) (2024-05-27)
 
 
