@@ -26,7 +26,7 @@
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 
-import { CoreConnectorAggregate, TtransferRequest, ValidationError } from '../../../src/domain';
+import {CoreConnectorAggregate, TQuoteRequest, ValidationError} from '../../../src/domain';
 import { FineractClientFactory, FineractError, IFineractClient } from '../../../src/domain/FineractClient';
 import {
     ISDKClient,
@@ -39,11 +39,15 @@ import { loggerFactory } from '../../../src/infra/logger';
 import config from '../../../src/config';
 import * as fixtures from '../../fixtures';
 import * as crypto from 'node:crypto';
-import { randomUUID } from 'crypto';
 import {
     fineractCalculateWithdrawQuoteResponseDto,
     fineractGetSavingsAccountResponseDto,
+    getPatchNotificationBody,
+    getSendTransferRequestBody,
+    invalidIBANTransfer,
+    invalidQuoteTransfer, postTransfersSuccessfulResponseDto,
     sdkInitiateTransferResponseDto,
+    validTransfer,
 } from '../../fixtures';
 
 const mockAxios = new MockAdapter(axios);
@@ -117,7 +121,7 @@ describe('CoreConnectorAggregate Tests -->', () => {
         });
     });
 
-    describe('getParties Method Tests -->', () => {
+    describe('Payee getParties Tests -->', () => {
         beforeEach(() => {
             fineractClient.lookupPartyInfo = jest.fn().mockResolvedValue({
                 statusCode: 200,
@@ -125,76 +129,401 @@ describe('CoreConnectorAggregate Tests -->', () => {
             });
         });
 
+        test('should return 400 if request has incorrect parameters', async ()=>{
+            try{
+                await ccAggregate.getParties('UG0000000008892343',"MSISDN");
+            }catch(err: unknown){
+                if(err instanceof ValidationError){
+                    expect(err.httpCode).toEqual(400);
+                }
+            }
+        });
+
+        test('should return 400 if IBAN string is poorly formatted', async ()=>{
+            try{
+                await ccAggregate.getParties('UG008892343',"IBAN");
+            }catch(err: unknown){
+                if(err instanceof ValidationError){
+                    expect(err.httpCode).toEqual(400);
+                }
+            }
+        });
+
+        test('should return http code 500 and Mojaloop Code 5000 if fineract search for account fails', async ()=>{
+            fineractClient.searchAccount = jest.fn().mockResolvedValue({
+                statusCode: 500
+            });
+
+            try{
+                await ccAggregate.getParties('UG0000000008892343',"IBAN");
+            }catch(err: unknown){
+                if(err instanceof ValidationError){
+                    expect(err.httpCode).toEqual(500);
+                    expect(err.mlCode).toEqual('5000');
+                }
+            }
+        });
+
+        test('should return http code 500 and Mojaloop Code 5000 if fineract getAccount by Id for account fails', async ()=>{
+            fineractClient.getSavingsAccount = jest.fn().mockResolvedValue({
+                statusCode: 500
+            });
+
+            try{
+                await ccAggregate.getParties('UG0000000008892343',"IBAN");
+            }catch(err: unknown){
+                if(err instanceof ValidationError){
+                    expect(err.httpCode).toEqual(500);
+                    expect(err.mlCode).toEqual('5000');
+                }
+            }
+        });
+
+        test('should return http code 404 and Mojaloop Code 5107 if returned fineract account is not active', async ()=>{
+            fineractClient.getSavingsAccount = jest.fn().mockResolvedValue({
+                statusCode: 200,
+                data: {
+                    status:{
+                        active: false
+                    }
+                }
+            });
+            try{
+                await ccAggregate.getParties('UG0000000008892343',"IBAN");
+            }catch(err: unknown){
+                if(err instanceof ValidationError){
+                    expect(err.httpCode).toEqual(404);
+                    expect(err.mlCode).toEqual('5107');
+                }
+            }
+        });
+
+        test('should return http code 404 and Mojaloop Code 5107 if fineract search for account returns no account', async ()=>{
+            fineractClient.searchAccount = jest.fn().mockResolvedValue({
+                statusCode: 200,
+                data:[]
+            });
+
+            try{
+                await ccAggregate.getParties('UG000000000889BXXX',"IBAN");
+            }catch(err: unknown){
+                if(err instanceof ValidationError){
+                    expect(err.httpCode).toEqual(404);
+                    expect(err.mlCode).toEqual('5107');
+                }
+            }
+        });
+
+        test('should return http code 500 and Mojaloop Code 5000 if fineract get Client fails',async ()=>{
+            fineractClient.getClient = jest.fn().mockResolvedValue({
+                statusCode: 500
+            });
+            try{
+                await ccAggregate.getParties('UG0000000008892343',"IBAN");
+            }catch(err: unknown){
+                if(err instanceof ValidationError){
+                    expect(err.httpCode).toEqual(500);
+                    expect(err.mlCode).toEqual('5000');
+                }
+            }
+        });
+
         test('should pass if data fineract.lookUpParty resolves', async () => {
-            const lookupRes = await ccAggregate.getParties('UG0000000008892343');
+            const lookupRes = await ccAggregate.getParties('UG0000000008892343',"IBAN");
             expect(lookupRes.data.firstName).toEqual('Dove');
         });
     });
 
-    describe('quoteRequest Method Tests', () => {
-        beforeEach(() => {
+    describe('Payee quoteRequest Tests', () => {
+        const validQuoteRequestBody : TQuoteRequest =  {
+            amount: '1000',
+            amountType: 'SEND',
+            currency: 'UGX',
+            from: {
+                dateOfBirth: '2036-10-31',
+                displayName: 'string',
+                extensionList: [
+                    {
+                        key: 'string',
+                        value: 'string',
+                    },
+                ],
+                firstName: 'string',
+                fspId: 'string',
+                idSubValue: 'string',
+                idType: 'MSISDN',
+                idValue: 'string',
+                lastName: 'string',
+                merchantClassificationCode: 'string',
+                middleName: 'string',
+                type: 'CONSUMER',
+            },
+            initiator: 'PAYER',
+            initiatorType: 'CONSUMER',
+            note: 'string',
+            quoteId: 'adbdb5be-d359-300a-bbcf-60d25a2ef3f9',
+            subScenario: 'string',
+            to: {
+                dateOfBirth: '2036-10-31',
+                displayName: 'string',
+                extensionList: [
+                    {
+                        key: 'string',
+                        value: 'string',
+                    },
+                ],
+                firstName: 'string',
+                fspId: 'string',
+                idSubValue: 'string',
+                idType: 'IBAN',
+                idValue: IBAN,
+                lastName: 'string',
+                merchantClassificationCode: 'string',
+                middleName: 'string',
+                type: 'CONSUMER',
+            },
+            transactionId: crypto.randomUUID(),
+            transactionType: 'TRANSFER',
+        };
+        const invalidIdTypeQuoteRequestBody: TQuoteRequest =  {
+            amount: '1000',
+            amountType: 'SEND',
+            currency: 'UGX',
+            from: {
+                dateOfBirth: '2036-10-31',
+                displayName: 'string',
+                extensionList: [
+                    {
+                        key: 'string',
+                        value: 'string',
+                    },
+                ],
+                firstName: 'string',
+                fspId: 'string',
+                idSubValue: 'string',
+                idType: 'MSISDN',
+                idValue: 'string',
+                lastName: 'string',
+                merchantClassificationCode: 'string',
+                middleName: 'string',
+                type: 'CONSUMER',
+            },
+            initiator: 'PAYER',
+            initiatorType: 'CONSUMER',
+            note: 'string',
+            quoteId: 'adbdb5be-d359-300a-bbcf-60d25a2ef3f9',
+            subScenario: 'string',
+            to: {
+                dateOfBirth: '2036-10-31',
+                displayName: 'string',
+                extensionList: [
+                    {
+                        key: 'string',
+                        value: 'string',
+                    },
+                ],
+                firstName: 'string',
+                fspId: 'string',
+                idSubValue: 'string',
+                idType: 'MSISDN',
+                idValue: IBAN,
+                lastName: 'string',
+                merchantClassificationCode: 'string',
+                middleName: 'string',
+                type: 'CONSUMER',
+            },
+            transactionId: crypto.randomUUID(),
+            transactionType: 'TRANSFER',
+        };
+        const invalidCurrencyQuoteRequestBody: TQuoteRequest =  {
+            amount: '1000',
+            amountType: 'SEND',
+            currency: 'UGX',
+            from: {
+                dateOfBirth: '2036-10-31',
+                displayName: 'string',
+                extensionList: [
+                    {
+                        key: 'string',
+                        value: 'string',
+                    },
+                ],
+                firstName: 'string',
+                fspId: 'string',
+                idSubValue: 'string',
+                idType: 'MSISDN',
+                idValue: 'string',
+                lastName: 'string',
+                merchantClassificationCode: 'string',
+                middleName: 'string',
+                type: 'CONSUMER',
+            },
+            initiator: 'PAYER',
+            initiatorType: 'CONSUMER',
+            note: 'string',
+            quoteId: 'adbdb5be-d359-300a-bbcf-60d25a2ef3f9',
+            subScenario: 'string',
+            to: {
+                dateOfBirth: '2036-10-31',
+                displayName: 'string',
+                extensionList: [
+                    {
+                        key: 'string',
+                        value: 'string',
+                    },
+                ],
+                firstName: 'string',
+                fspId: 'string',
+                idSubValue: 'string',
+                idType: 'IBAN',
+                idValue: IBAN,
+                lastName: 'string',
+                merchantClassificationCode: 'string',
+                middleName: 'string',
+                type: 'CONSUMER',
+            },
+            transactionId: crypto.randomUUID(),
+            transactionType: 'TRANSFER',
+        };
+
+        test('test quoteRequest should pass with correct ID Type', async () => {
             fineractClient.verifyBeneficiary = jest.fn().mockResolvedValue({
                 statusCode: 200,
                 data: fixtures.fineractVerifyBeneficiaryResponseDto(),
+                currency: 'UGX'
             });
+            const quoteRes = await ccAggregate.quoteRequest(validQuoteRequestBody);
+            expect(quoteRes.payeeFspFeeAmount).toEqual('0');
         });
 
-        test('test quoteRequest should pass', async () => {
-            const quoteRes = await ccAggregate.quoteRequest({
-                amount: '1000',
-                amountType: 'SEND',
-                currency: 'UGX',
-                from: {
-                    dateOfBirth: '2036-10-31',
-                    displayName: 'string',
-                    extensionList: [
-                        {
-                            key: 'string',
-                            value: 'string',
-                        },
-                    ],
-                    firstName: 'string',
-                    fspId: 'string',
-                    idSubValue: 'string',
-                    idType: 'MSISDN',
-                    idValue: 'string',
-                    lastName: 'string',
-                    merchantClassificationCode: 'string',
-                    middleName: 'string',
-                    type: 'CONSUMER',
-                },
-                initiator: 'PAYER',
-                initiatorType: 'CONSUMER',
-                note: 'string',
-                quoteId: 'adbdb5be-d359-300a-bbcf-60d25a2ef3f9',
-                subScenario: 'string',
-                to: {
-                    dateOfBirth: '2036-10-31',
-                    displayName: 'string',
-                    extensionList: [
-                        {
-                            key: 'string',
-                            value: 'string',
-                        },
-                    ],
-                    firstName: 'string',
-                    fspId: 'string',
-                    idSubValue: 'string',
-                    idType: 'IBAN',
-                    idValue: IBAN,
-                    lastName: 'string',
-                    merchantClassificationCode: 'string',
-                    middleName: 'string',
-                    type: 'CONSUMER',
-                },
-                transactionId: crypto.randomUUID(),
-                transactionType: 'TRANSFER',
+        test('should fail with invalid Id Type in request body', async ()=>{
+            try{
+                await ccAggregate.quoteRequest(invalidIdTypeQuoteRequestBody);
+            }catch(err: unknown){
+                if( err instanceof ValidationError){
+                    expect(err.mlCode).toEqual('3100');
+                    expect(err.httpCode).toEqual(400);
+                }
+            }
+        });
+
+        test('should fail with invalid to.Currency in request body', async ()=>{
+            try{
+                await ccAggregate.quoteRequest(invalidCurrencyQuoteRequestBody);
+            }catch(err: unknown){
+                if( err instanceof ValidationError){
+                    expect(err.mlCode).toEqual('5106');
+                    expect(err.httpCode).toEqual(500);
+                }
+            }
+        });
+
+        test('should return 500 http code and 5000 mojaloop code if search fineract account fails',async ()=>{
+            fineractClient.searchAccount = jest.fn().mockResolvedValue({
+                statusCode: 500
             });
-            expect(quoteRes.payeeFspFeeAmount).toEqual('0');
+            try{
+                await ccAggregate.quoteRequest(validQuoteRequestBody);
+            }catch(err: unknown){
+                if(err instanceof ValidationError){
+                    expect(err.mlCode).toEqual('5000');
+                    expect(err.httpCode).toEqual(500);
+                }
+            }
+        });
+
+        test('should return 500 http code and 5000 mojaloop code if get fineract account fails',async ()=>{
+            fineractClient.verifyBeneficiary = jest.fn().mockResolvedValue({
+                statusCode: 200,
+                data: fixtures.fineractVerifyBeneficiaryResponseDto(),
+                currency: 'UGX'
+            });
+            fineractClient.getSavingsAccount = jest.fn().mockResolvedValue({
+                statusCode: 500
+            });
+            try{
+                await ccAggregate.quoteRequest(validQuoteRequestBody);
+            }catch(err: unknown){
+                if(err instanceof ValidationError){
+                    expect(err.mlCode).toEqual('5000');
+                    expect(err.httpCode).toEqual(500);
+                }
+            }
+        });
+
+        test('should return http code 500 and 5107 mojaloop code if account is not found',async ()=>{
+            fineractClient.searchAccount = jest.fn().mockResolvedValue({
+                statusCode: 200,
+                data:[]
+            });
+            try{
+                await ccAggregate.quoteRequest(validQuoteRequestBody);
+            }catch(err: unknown){
+                if(err instanceof ValidationError){
+                    expect(err.mlCode).toEqual('5107');
+                    expect(err.httpCode).toEqual(500);
+                }
+            }
+        });
+
+        test('should return http code 500 and 5107 mojaloop code if account is not active',async ()=>{
+            fineractClient.searchAccount = jest.fn().mockResolvedValue({
+                statusCode: 200,
+                data:[{}]
+            });
+            fineractClient.getSavingsAccount = jest.fn().mockResolvedValue({
+                statusCode: 200,
+                data: {
+                    status:{
+                        active: false
+                    }
+                }
+            });
+            try{
+                await ccAggregate.quoteRequest(validQuoteRequestBody);
+            }catch(err: unknown){
+                if(err instanceof ValidationError){
+                    expect(err.mlCode).toEqual('5107');
+                    expect(err.httpCode).toEqual(500);
+                }
+            }
+        });
+
+        test('should return http code 500 and 5000 mojaloop code if get client fails',async ()=>{
+            fineractClient.searchAccount = jest.fn().mockResolvedValue({
+                statusCode: 200,
+                data:[{}]
+            });
+            fineractClient.getSavingsAccount = jest.fn().mockResolvedValue({
+                statusCode: 200,
+                data: {
+                    currency:{
+                        code:'UGX'
+                    },
+                    status:{
+                        active: true
+                    },
+                    subStatus:{
+                        blockCredit: false,
+                        blockDebit: false
+                    }
+                }
+            });
+            fineractClient.getClient = jest.fn().mockResolvedValue({
+                statusCode: 500
+            });
+            try{
+                await ccAggregate.quoteRequest(validQuoteRequestBody);
+            }catch(err: unknown){
+                if(err instanceof ValidationError){
+                    expect(err.mlCode).toEqual('5000');
+                    expect(err.httpCode).toEqual(500);
+                }
+            }
         });
     });
 
-    describe('receiveTransfer method tests', () => {
+    describe('Payee Receive Transfer tests', () => {
         beforeEach(() => {
             fineractClient.getAccountId = jest.fn().mockResolvedValue({
                 statusCode: 200,
@@ -206,115 +535,85 @@ describe('CoreConnectorAggregate Tests -->', () => {
             });
         });
 
+        test('should return a 400 Bad Request for an invalid IBAN string', async ()=>{
+            try{
+                await ccAggregate.receiveTransfer(invalidIBANTransfer);
+            }catch(err: unknown){
+                if( err instanceof ValidationError){
+                    expect(err.httpCode).toEqual(400);
+                }
+            }
+        });
+
+        test('should return http code 500 and ml code 5101 for an invalid quote', async ()=>{
+            try{
+                await ccAggregate.receiveTransfer(invalidQuoteTransfer);
+            }catch(err: unknown){
+                if( err instanceof ValidationError){
+                    expect(err.mlCode).toEqual('5101');
+                    expect(err.httpCode).toEqual(500);
+                }
+            }
+        });
+
         test('test receive transfer should resolve', async () => {
-            const transfer: TtransferRequest = {
-                homeR2PTransactionId: 'string',
-                amount: '500',
-                amountType: 'SEND',
-                currency: 'NGN',
-                from: {
-                    dateOfBirth: '5704-02-29',
-                    displayName: 'string',
-                    extensionList: [
-                        {
-                            key: 'string',
-                            value: 'string',
-                        },
-                    ],
-                    firstName: 'string',
-                    fspId: 'string',
-                    idSubValue: 'string',
-                    idType: 'MSISDN',
-                    idValue: 'string',
-                    lastName: 'string',
-                    merchantClassificationCode: 'string',
-                    middleName: 'string',
-                    type: 'CONSUMER',
-                },
-                ilpPacket: {
-                    data: {
-                        amount: {
-                            amount: '500',
-                            currency: 'NGN',
-                        },
-                        payee: {
-                            partyIdInfo: {
-                                partyIdType: 'IBAN',
-                                partyIdentifier: IBAN,
-                            },
-                        },
-                        payer: {
-                            partyIdInfo: {
-                                partyIdType: 'MSISDN',
-                                partyIdentifier: '820323232',
-                            },
-                        },
-                        quoteId: '27653e60-e21c-1414-8a35-0b5b97d5abc7',
-                        transactionId: '9fe8c410-5b31-188f-858f-67cb6b308198',
-                        transactionType: {
-                            initiator: 'PAYER',
-                            initiatorType: 'CONSUMER',
-                            scenario: 'TRANSFER',
-                            subScenario: 'string',
-                        },
-                    },
-                },
-                note: 'string',
-                quote: {
-                    expiration: '5200-02-29T21:42:06.649-09:08',
-                    extensionList: [
-                        {
-                            key: 'string',
-                            value: 'string',
-                        },
-                    ],
-                    geoCode: {
-                        latitude: '90',
-                        longitude: '+6.06',
-                    },
-                    payeeFspCommissionAmount: '0.97',
-                    payeeFspCommissionAmountCurrency: 'NGN',
-                    payeeFspFeeAmount: '0',
-                    payeeFspFeeAmountCurrency: 'NGN',
-                    payeeReceiveAmount: '0',
-                    payeeReceiveAmountCurrency: 'NGN',
-                    quoteId: randomUUID(),
-                    transactionId: randomUUID(),
-                    transferAmount: '500',
-                    transferAmountCurrency: 'NGN',
-                },
-                quoteRequestExtensions: [
-                    {
-                        key: 'string',
-                        value: 'string',
-                    },
-                ],
-                subScenario: 'string',
-                to: {
-                    dateOfBirth: '3956-02-29',
-                    displayName: 'string',
-                    extensionList: [
-                        {
-                            key: 'string',
-                            value: 'string',
-                        },
-                    ],
-                    firstName: 'string',
-                    fspId: 'string',
-                    idSubValue: 'string',
-                    idType: 'IBAN',
-                    idValue: IBAN,
-                    lastName: 'string',
-                    merchantClassificationCode: 'string',
-                    middleName: 'string',
-                    type: 'CONSUMER',
-                },
-                transactionType: 'TRANSFER',
-                transferId: randomUUID(),
-                transactionRequestId: randomUUID(),
-            };
-            const res = await ccAggregate.receiveTransfer(transfer);
-            expect(res.transferState).toEqual('COMMITTED');
+            const res = await ccAggregate.receiveTransfer(validTransfer);
+            expect(res.transferState).toEqual('RECEIVED');
+        });
+    });
+
+    describe('Payee commit on patch notification transfer tests', ()=>{
+        beforeEach(() => {});
+
+        test('should return 200 OK if transaction status is not COMPLETED', async ()=>{
+            try{
+                await ccAggregate.receivePatchNotification(getPatchNotificationBody("ERROR_OCCURRED"));
+            }catch(err: unknown){
+                if(err instanceof ValidationError){
+                    expect(err.httpCode).toEqual(200);
+                    expect(err.mlCode).toEqual("5000");
+                }
+            }
+        });
+
+        test('should return http code 500 and ml code 5000 if fineract search for account number fails ', async ()=>{
+            fineractClient.searchAccount = jest.fn().mockImplementation(()=>{
+                throw FineractError.genericAccountSearchFailedError('Search for account failed');
+            });
+
+            try{
+                await ccAggregate.receivePatchNotification(getPatchNotificationBody("COMPLETED"));
+            }catch(err: unknown){
+                if( err instanceof FineractError){
+                    expect(err.httpCode).toEqual(500);
+                    expect(err.mlCode).toEqual("5000");
+                }
+            }
+        });
+
+        test('should return httpCode 400 and mlCode 3100 for unsupported Id Type', async ()=>{
+            try{
+                await ccAggregate.receivePatchNotification(getPatchNotificationBody("COMPLETED","MSISDN"));
+            }catch(err: unknown){
+                if( err instanceof ValidationError){
+                    expect(err.httpCode).toEqual(400);
+                    expect(err.mlCode).toEqual("3100");
+                }
+            }
+        });
+
+        test('should return httpCode 500 and mlCode 5000 for a failed deposit in fineract', async ()=>{
+            fineractClient.receiveTransfer = jest.fn().mockImplementation(()=>{
+                throw FineractError.depositFailedError('5000',500);
+            });
+            try{
+                await ccAggregate.receivePatchNotification(getPatchNotificationBody("COMPLETED"));
+            }catch(err: unknown){
+                if( err instanceof FineractError){
+                    expect(err.httpCode).toEqual(500);
+                    expect(err.mlCode).toEqual("5000");
+                }
+            }
         });
     });
 
@@ -334,62 +633,11 @@ describe('CoreConnectorAggregate Tests -->', () => {
         });
 
         test('test sendTransfer happy path', async () => {
-            const transferRequest: TFineractOutboundTransferRequest = {
-                homeTransactionId: 'string',
-                amount: '100',
-                amountType: 'SEND',
-                currency: 'AED',
-                from: {
-                    fineractAccountId: 2,
-                    payer: {
-                        dateOfBirth: '8477-05-21',
-                        displayName: 'string',
-                        extensionList: [
-                            {
-                                key: 'string',
-                                value: 'string',
-                            },
-                        ],
-                        firstName: 'string',
-                        fspId: 'string',
-                        idSubValue: 'string',
-                        idType: 'IBAN',
-                        idValue: 'string',
-                        lastName: 'string',
-                        merchantClassificationCode: '1234',
-                        middleName: 'string',
-                        type: 'CONSUMER',
-                    },
-                },
-                to: {
-                    dateOfBirth: '8477-05-21',
-                    displayName: 'string',
-                    extensionList: [
-                        {
-                            key: 'string',
-                            value: 'string',
-                        },
-                    ],
-                    firstName: 'string',
-                    fspId: 'string',
-                    idSubValue: 'string',
-                    idType: 'MSISDN',
-                    idValue: 'string',
-                    lastName: 'string',
-                    merchantClassificationCode: '1234',
-                    middleName: 'string',
-                    type: 'CONSUMER',
-                },
-                note: 'string',
-                quoteRequestExtensions: [
-                    {
-                        key: 'string',
-                        value: 'string',
-                    },
-                ],
-                subScenario: 'HELLO',
-                transactionType: 'TRANSFER',
-            };
+            sdkClient.initiateTransfer = jest.fn().mockResolvedValue({
+                statusCode: 200,
+                data: postTransfersSuccessfulResponseDto("WAITING_FOR_PARTY_ACCEPTANCE"),
+            });
+            const transferRequest: TFineractOutboundTransferRequest = getSendTransferRequestBody(2, '100');
             const res = await ccAggregate.sendTransfer(transferRequest);
             expect(res.totalAmountFromFineract).toEqual(200);
         });
@@ -399,204 +647,51 @@ describe('CoreConnectorAggregate Tests -->', () => {
                 statusCode: 200,
                 data: fineractGetSavingsAccountResponseDto(true, false, 10000, true),
             });
-            const transferRequest: TFineractOutboundTransferRequest = {
-                homeTransactionId: 'string',
-                amount: '100',
-                amountType: 'SEND',
-                currency: 'AED',
-                from: {
-                    fineractAccountId: 2,
-                    payer: {
-                        dateOfBirth: '8477-05-21',
-                        displayName: 'string',
-                        extensionList: [
-                            {
-                                key: 'string',
-                                value: 'string',
-                            },
-                        ],
-                        firstName: 'string',
-                        fspId: 'string',
-                        idSubValue: 'string',
-                        idType: 'IBAN',
-                        idValue: 'string',
-                        lastName: 'string',
-                        merchantClassificationCode: '1234',
-                        middleName: 'string',
-                        type: 'CONSUMER',
-                    },
-                },
-                to: {
-                    dateOfBirth: '8477-05-21',
-                    displayName: 'string',
-                    extensionList: [
-                        {
-                            key: 'string',
-                            value: 'string',
-                        },
-                    ],
-                    firstName: 'string',
-                    fspId: 'string',
-                    idSubValue: 'string',
-                    idType: 'MSISDN',
-                    idValue: 'string',
-                    lastName: 'string',
-                    merchantClassificationCode: '1234',
-                    middleName: 'string',
-                    type: 'CONSUMER',
-                },
-                note: 'string',
-                quoteRequestExtensions: [
-                    {
-                        key: 'string',
-                        value: 'string',
-                    },
-                ],
-                subScenario: 'HELLO',
-                transactionType: 'TRANSFER',
-            };
+            const transferRequest: TFineractOutboundTransferRequest = getSendTransferRequestBody(2,'100');
             try {
                 await ccAggregate.sendTransfer(transferRequest);
             } catch (error: unknown) {
                 expect(error).toBeInstanceOf(FineractError);
-                expect((error as FineractError).mlCode).toEqual('4400');
+                expect((error as FineractError).mlCode).toEqual('5107');
             }
         });
 
-        test('test sendTransfer with undefined fees should throw SDKClientError No Quote', async () => {
+        test('should return httpCode 500 when getAccount fails or account is inactive', async ()=>{
+            fineractClient.getSavingsAccount = jest.fn().mockResolvedValueOnce({
+                statusCode: 500,
+                data: fineractGetSavingsAccountResponseDto(false, false, 10000, false),
+            });
             sdkClient.initiateTransfer = jest.fn().mockResolvedValue({
                 statusCode: 200,
-                data: sdkInitiateTransferResponseDto('100', undefined),
+                data: postTransfersSuccessfulResponseDto("WAITING_FOR_PARTY_ACCEPTANCE"),
             });
-            const transferRequest: TFineractOutboundTransferRequest = {
-                homeTransactionId: 'string',
-                amount: '100',
-                amountType: 'SEND',
-                currency: 'AED',
-                from: {
-                    fineractAccountId: 2,
-                    payer: {
-                        dateOfBirth: '8477-05-21',
-                        displayName: 'string',
-                        extensionList: [
-                            {
-                                key: 'string',
-                                value: 'string',
-                            },
-                        ],
-                        firstName: 'string',
-                        fspId: 'string',
-                        idSubValue: 'string',
-                        idType: 'IBAN',
-                        idValue: 'string',
-                        lastName: 'string',
-                        merchantClassificationCode: '1234',
-                        middleName: 'string',
-                        type: 'CONSUMER',
-                    },
-                },
-                to: {
-                    dateOfBirth: '8477-05-21',
-                    displayName: 'string',
-                    extensionList: [
-                        {
-                            key: 'string',
-                            value: 'string',
-                        },
-                    ],
-                    firstName: 'string',
-                    fspId: 'string',
-                    idSubValue: 'string',
-                    idType: 'MSISDN',
-                    idValue: 'string',
-                    lastName: 'string',
-                    merchantClassificationCode: '1234',
-                    middleName: 'string',
-                    type: 'CONSUMER',
-                },
-                note: 'string',
-                quoteRequestExtensions: [
-                    {
-                        key: 'string',
-                        value: 'string',
-                    },
-                ],
-                subScenario: 'HELLO',
-                transactionType: 'TRANSFER',
-            };
-            try {
+            const transferRequest: TFineractOutboundTransferRequest = getSendTransferRequestBody(2, '100');
+            try{
                 await ccAggregate.sendTransfer(transferRequest);
-            } catch (error: unknown) {
-                expect(error).toBeInstanceOf(SDKClientError);
-                expect((error as SDKClientError).mlCode).toEqual('3200');
+            }catch(err: unknown){
+                if( err instanceof ValidationError){
+                    expect(err.httpCode).toEqual(500);
+                    expect(err.mlCode).toEqual("3200");
+                }
             }
         });
 
-        test('test sendTransfer with amount greater than available balance', async () => {
-            fineractClient.calculateWithdrawQuote = jest.fn().mockResolvedValue({
-                feeAmount: fineractCalculateWithdrawQuoteResponseDto(20000),
+        test('should return httpCode 500 if quote response fails', async ()=>{
+            sdkClient.updateTransfer = jest.fn().mockResolvedValueOnce({
+                statusCode: 500,
             });
-            const transferRequest: TFineractOutboundTransferRequest = {
-                homeTransactionId: 'string',
-                amount: '100',
-                amountType: 'SEND',
-                currency: 'AED',
-                from: {
-                    fineractAccountId: 2,
-                    payer: {
-                        dateOfBirth: '8477-05-21',
-                        displayName: 'string',
-                        extensionList: [
-                            {
-                                key: 'string',
-                                value: 'string',
-                            },
-                        ],
-                        firstName: 'string',
-                        fspId: 'string',
-                        idSubValue: 'string',
-                        idType: 'IBAN',
-                        idValue: 'string',
-                        lastName: 'string',
-                        merchantClassificationCode: '1234',
-                        middleName: 'string',
-                        type: 'CONSUMER',
-                    },
-                },
-                to: {
-                    dateOfBirth: '8477-05-21',
-                    displayName: 'string',
-                    extensionList: [
-                        {
-                            key: 'string',
-                            value: 'string',
-                        },
-                    ],
-                    firstName: 'string',
-                    fspId: 'string',
-                    idSubValue: 'string',
-                    idType: 'MSISDN',
-                    idValue: 'string',
-                    lastName: 'string',
-                    merchantClassificationCode: '1234',
-                    middleName: 'string',
-                    type: 'CONSUMER',
-                },
-                note: 'string',
-                quoteRequestExtensions: [
-                    {
-                        key: 'string',
-                        value: 'string',
-                    },
-                ],
-                subScenario: 'HELLO',
-                transactionType: 'TRANSFER',
-            };
-            try {
+            sdkClient.initiateTransfer = jest.fn().mockResolvedValue({
+                statusCode: 200,
+                data: postTransfersSuccessfulResponseDto("WAITING_FOR_CONVERSION_ACCEPTANCE"),
+            });
+            const transferRequest: TFineractOutboundTransferRequest = getSendTransferRequestBody(2, '100');
+            try{
                 await ccAggregate.sendTransfer(transferRequest);
-            } catch (error: unknown) {
-                expect(error).toBeInstanceOf(FineractError);
-                expect((error as FineractError).mlCode).toEqual('4001');
+            }catch(err: unknown){
+                if( err instanceof SDKClientError){
+                    expect(err.httpCode).toEqual(500);
+                    expect(err.mlCode).toEqual("4000");
+                }
             }
         });
     });
