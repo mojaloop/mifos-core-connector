@@ -107,6 +107,7 @@ export class DFSPCoreConnectorRoutes extends BaseRoutes {
             const updateTransferRes = await this.aggregate.updateSentTransfer({
                 fineractTransaction: transferAccept.fineractTransaction,
                 sdkTransferId: params.transferId as string,
+                transferContinuationAccept: transferAccept.transferContinuationAccept,
             });
             return this.handleResponse(updateTransferRes, h);
         } catch (error: unknown) {
