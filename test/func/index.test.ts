@@ -41,6 +41,9 @@ const IdType = 'IBAN';
 
 const baseurl = `http://${config.get('server').SDK_SERVER_HOST}:${config.get('server').SDK_SERVER_PORT}`;
 const dfsp_baseurl = `http://${config.get('server').DFSP_SERVER_HOST}:${config.get('server').DFSP_SERVER_PORT}`;
+const supportedCurrencies = config.get('fineract.FINERACT_SUPPORTED_CURRENCIES');
+console.log(`${supportedCurrencies} with type ${typeof supportedCurrencies}`);
+console.log(JSON.stringify(supportedCurrencies));
 
 describe('Mifos Core Connector Functional Tests', () => {
     beforeAll(async () => {

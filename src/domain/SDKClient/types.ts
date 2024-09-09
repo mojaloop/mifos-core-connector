@@ -28,7 +28,7 @@
 
 import { SDKSchemeAdapter } from '@mojaloop/api-snippets';
 import { IHTTPClient, ILogger, THttpResponse } from '../interfaces';
-import { components } from '@mojaloop/api-snippets/lib/sdk-scheme-adapter/v2_0_0/outbound/openapi';
+import { components } from '@mojaloop/api-snippets/lib/sdk-scheme-adapter/v2_1_0/outbound/openapi';
 
 export type TSDKSchemeAdapterConfig = {
     SDK_BASE_URL: string;
@@ -71,17 +71,13 @@ export type TSDKOutboundTransferRequest = {
     skipPartyLookup?: boolean;
 };
 
-export type TSDKOutboundTransferResponse = SDKSchemeAdapter.V2_0_0.Outbound.Types.transferResponse;
-
 export type TFineractOutboundTransferResponse = {
     totalAmountFromFineract: number;
-    transferResponse: SDKSchemeAdapter.V2_0_0.Outbound.Types.transferResponse;
+    transferResponse: components['schemas']['transferResponse'];
 };
 
 export type TFineractTransferContinuationRequest = {
-    transferContinuationAccept:
-        | SDKSchemeAdapter.V2_0_0.Outbound.Types.transferContinuationAcceptParty
-        | SDKSchemeAdapter.V2_0_0.Outbound.Types.transferContinuationAcceptQuote;
+    transferContinuationAccept: SDKSchemeAdapter.V2_0_0.Outbound.Types.transferContinuationAcceptQuote;
     fineractTransaction: {
         fineractAccountId: number;
         totalAmount: number;
@@ -93,9 +89,11 @@ export type TFineractTransferContinuationRequest = {
 
 export type TSDKTransferContinuationRequest =
     | SDKSchemeAdapter.V2_0_0.Outbound.Types.transferContinuationAcceptParty
-    | SDKSchemeAdapter.V2_0_0.Outbound.Types.transferContinuationAcceptQuote;
+    | SDKSchemeAdapter.V2_0_0.Outbound.Types.transferContinuationAcceptQuote
+    | components['schemas']['transferContinuationAcceptConversion'];
 
 export type TUpdateTransferDeps = {
+    transferContinuationAccept: SDKSchemeAdapter.V2_0_0.Outbound.Types.transferContinuationAcceptQuote;
     fineractTransaction: {
         fineractAccountId: number;
         totalAmount: number;
@@ -103,12 +101,11 @@ export type TUpdateTransferDeps = {
         receiptNumber: string;
         bankNumber: string;
     };
-    sdkTransferId: number | string;
+    sdkTransferId: string;
 };
 
-export type TtransferContinuationResponse =
-    | SDKSchemeAdapter.V2_0_0.Outbound.Types.transferResponse
-    | SDKSchemeAdapter.V2_0_0.Outbound.Types.errorTransferResponse;
+export type TtransferContinuationResponse = components['schemas']['transferResponse'];
+export type TSDKOutboundTransferResponse = TtransferContinuationResponse;
 
 export type TSDKClientDeps = {
     logger: ILogger;
@@ -120,6 +117,6 @@ export interface ISDKClient {
     initiateTransfer(transfer: TSDKOutboundTransferRequest): Promise<THttpResponse<TSDKOutboundTransferResponse>>;
     updateTransfer(
         transferAccept: TSDKTransferContinuationRequest,
-        id: number,
+        id: string,
     ): Promise<THttpResponse<TtransferContinuationResponse>>;
 }

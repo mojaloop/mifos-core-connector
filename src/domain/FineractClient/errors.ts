@@ -36,38 +36,45 @@ export class FineractError extends BasicError {
         });
     }
 
-    static searchAccountError(message: string) {
+    static getAccountError(message: string) {
         return new FineractError(message, {
             httpCode: 500,
-            mlCode: '3200',
+            mlCode: '5000',
         });
     }
 
     static noAccountFoundError() {
         return new FineractError('Fineract Account Not Found', {
             httpCode: 404,
-            mlCode: '3200',
+            mlCode: '5107',
         });
     }
 
     static accountNotActiveError() {
         return new FineractError('Fineract Account not active', {
+            httpCode: 404,
+            mlCode: '5107',
+        });
+    }
+
+    static genericAccountNotActiveError(message: string, mlCode: string) {
+        return new FineractError(message, {
             httpCode: 500,
-            mlCode: '4000',
+            mlCode: mlCode,
         });
     }
 
     static getClientWithIdError() {
         return new FineractError('Failed to get client by clientId ', {
             httpCode: 500,
-            mlCode: '4000',
+            mlCode: '5000',
         });
     }
 
-    static depositFailedError() {
+    static depositFailedError(mlCode: string, httpCode: number) {
         return new FineractError('Fineract Deposit Failed', {
-            httpCode: 500,
-            mlCode: '4000',
+            httpCode: httpCode,
+            mlCode: mlCode,
         });
     }
 
@@ -88,7 +95,21 @@ export class FineractError extends BasicError {
     static accountDebitOrCreditBlockedError(message: string) {
         return new FineractError(message, {
             httpCode: 500,
-            mlCode: '4400', // todo: or 5400
+            mlCode: '5107',
+        });
+    }
+
+    static genericNoAccountFoundError(message: string, mlCode: string) {
+        return new FineractError(message, {
+            httpCode: 500,
+            mlCode: mlCode,
+        });
+    }
+
+    static genericAccountSearchFailedError(message: string) {
+        return new FineractError(message, {
+            httpCode: 500,
+            mlCode: '5000',
         });
     }
 }

@@ -75,7 +75,7 @@ export class SDKClient implements ISDKClient {
 
     async updateTransfer(
         transferAccept: TSDKTransferContinuationRequest,
-        id: number,
+        id: string,
     ): Promise<THttpResponse<TtransferContinuationResponse>> {
         this.logger.info('SDKClient initiate update receiveTransfer %s', transferAccept);
         try {

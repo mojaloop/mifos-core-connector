@@ -86,6 +86,12 @@ const config = Convict<IConfigSchema>({
             default: null, // required
             env: 'FINERACT_PAYMENT_TYPE_ID',
         },
+        FINERACT_SUPPORTED_CURRENCIES: {
+            doc: 'Supported Currencies for the fineract instance',
+            format: Array,
+            default: null, // required
+            env: 'FINERACT_SUPPORTED_CURRENCIES',
+        },
     },
     server: {
         SDK_SERVER_HOST: {

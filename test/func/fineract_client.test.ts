@@ -26,10 +26,10 @@
  ******/
 'use strict';
 
-import { FineractClientFactory, TFineractConfig } from '../../src/domain/FineractClient';
-import { loggerFactory } from '../../src/infra/logger';
+import {EStage, FineractClientFactory, TFineractConfig} from '../../src/domain/FineractClient';
+import {loggerFactory} from '../../src/infra/logger';
 import config from '../../src/config';
-import { AxiosClientFactory } from '../../src/infra/axiosHttpClient';
+import {AxiosClientFactory} from '../../src/infra/axiosHttpClient';
 
 const logger = loggerFactory({ context: 'Mifos Core Connector Tests' });
 const fineractConfig = config.get('fineract') as TFineractConfig;
@@ -43,12 +43,12 @@ const fineractClient = FineractClientFactory.createClient({
 
 describe('fineract_client', () => {
     test('fineract client - test get account id from account No : should pass', async () => {
-        const account = await fineractClient.getAccountId('000000006');
+        const account = await fineractClient.getAccountId('000000006',EStage.GET_PARTIES);
         expect(account).toBeTruthy();
     });
 
     test('fineract client - test get account id from non existent account No: should fail ', async () => {
-        const account = fineractClient.getAccountId('sbhsf');
+        const account = fineractClient.getAccountId('sbhsf',EStage.QUOTE_REQUEST);
         await expect(account).rejects.toThrow();
     });
 

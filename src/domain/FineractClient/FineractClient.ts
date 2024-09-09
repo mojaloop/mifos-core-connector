@@ -41,6 +41,7 @@ import {
     TFineractTransactionResponse,
     TFineractTransactionPayload,
     TFineractGetChargeResponse,
+    EStage,
 } from './types';
 import { FineractError } from './errors';
 
@@ -66,7 +67,7 @@ export class FineractClient implements IFineractClient {
 
     async lookupPartyInfo(accountNo: string): Promise<TLookupResponseInfo> {
         this.logger.info(`Looking up party with account ${accountNo}`);
-        return this.getAccountId(accountNo);
+        return this.getAccountId(accountNo, EStage.GET_PARTIES);
     }
 
     async calculateWithdrawQuote(quoteDeps: TCalculateQuoteDeps): Promise<TCalculateQuoteResponse> {
@@ -97,7 +98,7 @@ export class FineractClient implements IFineractClient {
     async verifyBeneficiary(accountNo: string): Promise<TLookupResponseInfo> {
         // Fineract has no fees for deposits. Only calculating for withdraws.
         this.logger.info(`Calculating quote for party with account ${accountNo}`);
-        return await this.getAccountId(accountNo);
+        return await this.getAccountId(accountNo, EStage.QUOTE_REQUEST);
     }
 
     async receiveTransfer(transferDeps: TFineractTransferDeps): Promise<THttpResponse<TFineractTransactionResponse>> {
@@ -116,22 +117,42 @@ export class FineractClient implements IFineractClient {
             });
         } catch (error: unknown) {
             this.logger.error(`Failed to Deposit: ${(error as Error)?.message}`);
-            throw FineractError.depositFailedError();
+            throw FineractError.depositFailedError('5000', 500);
         }
     }
 
-    async getAccountId(accountNo: string): Promise<TLookupResponseInfo> {
+    private handleAccountNotFoundError(stage: EStage) {
+        if (stage === EStage.GET_PARTIES) {
+            throw FineractError.noAccountFoundError();
+        } else if (stage === EStage.QUOTE_REQUEST) {
+            throw FineractError.genericNoAccountFoundError('No Account Found during Quoting', '5107');
+        } else {
+            throw FineractError.genericNoAccountFoundError('No Account Found during Transfer', '5000');
+        }
+    }
+
+    private handleAccountNotActiveError(stage: EStage) {
+        if (stage === EStage.GET_PARTIES) {
+            throw FineractError.accountNotActiveError();
+        } else if (stage === EStage.QUOTE_REQUEST) {
+            throw FineractError.genericAccountNotActiveError('Account Not Active during quoting', '5107');
+        } else {
+            throw FineractError.genericAccountNotActiveError('Account Not Active during transfer', '5000');
+        }
+    }
+
+    async getAccountId(accountNo: string, stage: EStage): Promise<TLookupResponseInfo> {
         this.logger.info(`Searching for Account with account number ${accountNo}`);
         const res = await this.searchAccount(accountNo);
         if (!res.data[0]) {
             this.logger.warn(`Account number ${accountNo} not found`, 'FIN');
-            throw FineractError.noAccountFoundError();
+            this.handleAccountNotFoundError(stage);
         }
         const returnedEntity = res.data[0];
         const getAccountRes = await this.getSavingsAccount(returnedEntity.entityId);
         if (!getAccountRes.data.status.active) {
             this.logger.warn('Fineract Account not active', getAccountRes.data);
-            throw FineractError.accountNotActiveError();
+            this.handleAccountNotActiveError(stage);
         } else if (getAccountRes.data.subStatus.blockCredit || getAccountRes.data.subStatus.blockDebit) {
             throw FineractError.accountDebitOrCreditBlockedError('Account blocked for credit or debit');
         }
@@ -142,6 +163,7 @@ export class FineractClient implements IFineractClient {
             this.logger.warn(`Failed to get client with Id ${getAccountRes.data.clientId}`, getAccountRes.data);
             throw FineractError.getClientWithIdError();
         }
+        // todo : Do AML Checks and Amount limit checks at this point.
         const lookUpRes = {
             accountId: returnedEntity.entityId,
             data: getClientRes.data,
@@ -152,14 +174,20 @@ export class FineractClient implements IFineractClient {
         return lookUpRes;
     }
 
-    private async searchAccount(accountNo: string): Promise<THttpResponse<TFineractSearchResponse>> {
+    async searchAccount(accountNo: string): Promise<THttpResponse<TFineractSearchResponse>> {
         const url = `${this.fineractConfig.FINERACT_BASE_URL}/${ROUTES.search}?query=${accountNo}&resource=savingsaccount`;
         this.logger.info(`Request to fineract ${url}`);
-        return await this.httpClient.send<TFineractSearchResponse>({
+        const searchRes = await this.httpClient.send<TFineractSearchResponse>({
             url: url,
             method: 'GET',
             headers: this.getDefaultHeaders(),
         });
+        if (searchRes.statusCode !== 200) {
+            const errMessage = `Search Account failed with status code ${searchRes.statusCode}`;
+            this.logger.warn(errMessage, { accountNo });
+            throw FineractError.genericAccountSearchFailedError(errMessage);
+        }
+        return searchRes;
     }
 
     async getSavingsAccount(accountId: number): Promise<THttpResponse<TFineractGetAccountResponse>> {
@@ -172,9 +200,9 @@ export class FineractClient implements IFineractClient {
         });
 
         if (accountRes.statusCode !== 200) {
-            const errMessage = `Search for Account failed with status code ${accountRes.statusCode}`;
+            const errMessage = `Get Account failed with status code ${accountRes.statusCode}`;
             this.logger.warn(errMessage, { accountId });
-            throw FineractError.searchAccountError(errMessage);
+            throw FineractError.getAccountError(errMessage);
         }
 
         // todo: return accountRes.data
@@ -193,7 +221,7 @@ export class FineractClient implements IFineractClient {
         return `Basic ${Buffer.from(`${this.fineractConfig.FINERACT_USERNAME}:${this.fineractConfig.FINERACT_PASSWORD}`).toString('base64')}`;
     }
 
-    private async getClient(clientId: number): Promise<THttpResponse<TFineractGetClientResponse>> {
+    async getClient(clientId: number): Promise<THttpResponse<TFineractGetClientResponse>> {
         const url = `${this.fineractConfig.FINERACT_BASE_URL}/${ROUTES.clients}/${clientId}`;
         this.logger.info(`Request to fineract ${url}`);
         return await this.httpClient.send<TFineractGetClientResponse>({

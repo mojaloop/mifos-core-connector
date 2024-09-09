@@ -30,6 +30,9 @@
 import { SDKSchemeAdapter } from '@mojaloop/api-snippets';
 import { AxiosRequestConfig, CreateAxiosDefaults } from 'axios';
 import { ILogger } from './infrastructure';
+import { components } from '@mojaloop/api-snippets/lib/sdk-scheme-adapter/v2_1_0/backend/openapi';
+import {components as OutboundComponents } from "@mojaloop/api-snippets/lib/sdk-scheme-adapter/v2_1_0/outbound/openapi";
+import { components as fspiopComponents } from '@mojaloop/api-snippets/lib/fspiop/v2_0/openapi';
 
 export type TJson = string | number | boolean | { [x: string]: TJson } | Array<TJson>;
 
@@ -42,7 +45,41 @@ export type THttpClientDeps = {
 
 export type TQuoteRequest = SDKSchemeAdapter.V2_0_0.Backend.Types.quoteRequest;
 
-export type TtransferRequest = SDKSchemeAdapter.V2_0_0.Backend.Types.transferRequest;
+export type TQuoteResponse = {
+    expiration?: components['schemas']['timestamp'];
+    extensionList?: components['schemas']['extensionList'];
+    geoCode?: components['schemas']['geoCode'];
+    payeeFspCommissionAmount?: components['schemas']['money'];
+    payeeFspCommissionAmountCurrency?: components['schemas']['currency'];
+    payeeFspFeeAmount: components['schemas']['money'];
+    payeeFspFeeAmountCurrency?: components['schemas']['currency'];
+    payeeReceiveAmount: components['schemas']['money'];
+    payeeReceiveAmountCurrency?: components['schemas']['currency'];
+    quoteId: components['schemas']['quoteId'];
+    transactionId: components['schemas']['transactionId'];
+    transferAmount: components['schemas']['money'];
+    transferAmountCurrency: components['schemas']['currency'];
+};
+
+export type TtransferRequest = {
+    /** @description Linked homeR2PTransactionId which was generated as part of POST /requestToPay to SDK incase of requestToPay transfer. */
+    homeR2PTransactionId?: string;
+    amount: components['schemas']['money'];
+    amountType: components['schemas']['amountType'];
+    currency: components['schemas']['currency'];
+    from: components['schemas']['transferParty'];
+    ilpPacket: {
+        data: components['schemas']['ilpPacketData'];
+    };
+    note?: string;
+    quote: TQuoteResponse;
+    quoteRequestExtensions?: components['schemas']['extensionList'];
+    subScenario?: components['schemas']['TransactionSubScenario'];
+    to: components['schemas']['transferParty'];
+    transactionType: components['schemas']['transactionType'];
+    transferId: components['schemas']['transferId'];
+    transactionRequestId?: components['schemas']['transactionRequestId'];
+};
 
 export type THttpResponse<R> = {
     data: R;
@@ -56,8 +93,6 @@ export type TRequestOptions = {
     method?: string;
     headers?: unknown | undefined;
 };
-
-export type TQuoteResponse = SDKSchemeAdapter.V2_0_0.Backend.Types.quoteResponse;
 
 export type TtransferResponse = SDKSchemeAdapter.V2_0_0.Backend.Types.transferResponse;
 
@@ -74,7 +109,7 @@ export type Payee = {
     merchantClassificationCode?: string;
     middleName: string;
     type: string;
-    supportedCurrencies?: string;
+    supportedCurrencies: string;
     kycInformation: string;
 };
 
@@ -86,3 +121,40 @@ export type Transfer = {
 };
 
 export type TLookupPartyInfoResponse = THttpResponse<Payee>;
+
+export type TtransferPatchNotificationRequest = {
+    currentState?: OutboundComponents['schemas']['transferStatus'];
+    /** @enum {string} */
+    direction?: 'INBOUND';
+    finalNotification?: {
+        completedTimestamp: components['schemas']['timestamp'];
+        extensionList?: components['schemas']['extensionList'];
+        transferState: components['schemas']['transferState'];
+    };
+    fulfil?: {
+        body?: Record<string, never>;
+        headers?: Record<string, never>;
+    };
+    initiatedTimestamp?: components['schemas']['timestamp'];
+    lastError?: components['schemas']['transferError'];
+    prepare?: {
+        body?: Record<string, never>;
+        headers?: Record<string, never>;
+    };
+    quote?: {
+        fulfilment?: string;
+        internalRequest?: Record<string, never>;
+        mojaloopResponse?: Record<string, never>;
+        request?: Record<string, never>;
+        response?: Record<string, never>;
+    };
+    quoteRequest?: {
+        body: fspiopComponents['schemas']['QuotesPostRequest'];
+        headers?: Record<string, never>;
+    };
+    quoteResponse?: {
+        body?: Record<string, never>;
+        headers?: Record<string, never>;
+    };
+    transferId?: components['schemas']['transferId'];
+};

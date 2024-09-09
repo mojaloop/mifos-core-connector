@@ -33,6 +33,7 @@ export type TFineractConfig = {
     FINERACT_ID_TYPE: IdType;
     FINERACT_LOCALE: string;
     FINERACT_PAYMENT_TYPE_ID: string;
+    FINERACT_SUPPORTED_CURRENCIES: string[];
 };
 
 export enum FineractLookupStage {
@@ -196,6 +197,12 @@ export type TFineractGetClientResponse = {
     };
 };
 
+export enum EStage {
+    GET_PARTIES = 'getParties',
+    QUOTE_REQUEST = 'quoteRequest',
+    TRANSFER = 'transfer',
+}
+
 export interface IFineractClient {
     fineractConfig: TFineractConfig;
     httpClient: IHTTPClient;
@@ -203,10 +210,12 @@ export interface IFineractClient {
     lookupPartyInfo(accountNo: string): Promise<TLookupResponseInfo>;
     verifyBeneficiary(accountNo: string): Promise<TLookupResponseInfo>;
     receiveTransfer(transferDeps: TFineractTransferDeps): Promise<THttpResponse<TFineractTransactionResponse>>;
-    getAccountId(accountNo: string): Promise<TLookupResponseInfo>;
+    getAccountId(accountNo: string, stage: EStage): Promise<TLookupResponseInfo>;
     calculateWithdrawQuote(quoteDeps: TCalculateQuoteDeps): Promise<TCalculateQuoteResponse>;
     getSavingsAccount(accountId: number): Promise<THttpResponse<TFineractGetAccountResponse>>;
     sendTransfer(transactionPayload: TFineractTransferDeps): Promise<THttpResponse<TFineractTransactionResponse>>;
+    searchAccount(accountNo: string): Promise<THttpResponse<TFineractSearchResponse>>;
+    getClient(clientId: number): Promise<THttpResponse<TFineractGetClientResponse>>
 }
 
 export type TFineractClientFactoryDeps = {

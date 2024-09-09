@@ -32,10 +32,7 @@ import { BasicError, ErrorOptions } from '../interfaces';
 export class SDKClientError extends BasicError {
     // think, if it's better to have a separate class
     static continueTransferError(message: string, options?: ErrorOptions) {
-        const {
-          httpCode = 500,
-          mlCode = httpCode === 504 ? '2004' : '2001'
-        } = options || {};
+        const { httpCode = 500, mlCode = httpCode === 504 ? '2004' : '2001' } = options || {};
         return new SDKClientError(message, { mlCode, httpCode });
     }
 
@@ -51,5 +48,27 @@ export class SDKClientError extends BasicError {
             httpCode: 500,
             mlCode: '3200',
         });
+    }
+
+    static noTransferIdReturned() {
+        return new SDKClientError('Transfer Id for initiated Transfer not returned', {
+            httpCode: 500,
+            mlCode: '4000',
+        });
+    }
+
+    static invalidQuoteReceived(message: string, options: ErrorOptions) {
+        return new SDKClientError(message, options);
+    }
+
+    static quoteRejectedError() {
+        return new SDKClientError('Rejected. OK', {
+            httpCode: 200,
+            mlCode: '4000',
+        });
+    }
+
+    static genericQuoteValidationError(message: string, options?: ErrorOptions) {
+        return new SDKClientError(message, options);
     }
 }

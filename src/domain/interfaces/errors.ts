@@ -68,7 +68,7 @@ export class ValidationError extends BasicError {
     static accountVerificationError() {
         return new ValidationError('Funds Source Account is not active in Fineract', {
             mlCode: '3200',
-            httpCode: 400, // todo: think, which http code should be used here
+            httpCode: 500,
         });
     }
 
@@ -76,6 +76,34 @@ export class ValidationError extends BasicError {
         return new ValidationError('Unsupported Id Type', {
             mlCode: '3100',
             httpCode: 400,
+        });
+    }
+
+    static quoteValidationError() {
+        return new ValidationError('Quote Validation Failed', {
+            mlCode: '5101',
+            httpCode: 500,
+        });
+    }
+
+    static unsupportedCurrency() {
+        return new ValidationError('Unsupported Currency', {
+            mlCode: '5106',
+            httpCode: 500,
+        });
+    }
+
+    static partyIdNotProvided() {
+        return new ValidationError('Party Id not Provided', {
+            mlCode: '5000',
+            httpCode: 500,
+        });
+    }
+
+    static transferNotComplete(mlCode: string, httCode: number) {
+        return new ValidationError('Transfer Aborted due to error as specified in request body', {
+            mlCode: mlCode,
+            httpCode: httCode,
         });
     }
 
